@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Monorepo orchestration for Flexora platform",
   "scripts": {
-    "postinstall": "npm run install-all",
+    "postinstall": "npm run install-all && npm run build --prefix Client",
     "install-all": "npm install --prefix Client && npm install --prefix Server",
     "build": "npm run install-all && npm run build --prefix Client",
     "start": "node Server/index.js",
