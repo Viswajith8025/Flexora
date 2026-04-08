@@ -49,7 +49,7 @@ console.log("📂 Serving static files from:", clientDistPath);
 app.use(express.static(clientDistPath));
 
 // Catch-all route for SPA
-app.get("/:path*", (req, res) => {
+app.get("*", (req, res) => {
   if (!req.path.startsWith('/api/')) {
     res.sendFile(path.join(clientDistPath, "index.html"));
   }
