@@ -1,0 +1,362 @@
+@import "tailwindcss";
+
+@theme {
+  --color-flex-obsidian: #0f172a;
+  --color-flex-midnight: #1e293b;
+  --color-flex-accent: #3b82f6;
+  --color-flex-indigo: #6366f1;
+  --font-flex-sans: 'Inter', 'General Sans', system-ui, sans-serif;
+
+  /* Spacing Scale */
+  --spacing-flex-xs: 0.5rem;   /* 8px */
+  --spacing-flex-sm: 1rem;     /* 16px */
+  --spacing-flex-md: 1.5rem;   /* 24px */
+  --spacing-flex-lg: 2rem;     /* 32px */
+  --spacing-flex-xl: 3rem;     /* 48px */
+}
+
+/*
+ * ─── MOTION SYSTEM ──────────────────────────────────────────────────────────
+ *
+ * Single source of truth for all animation timing.
+ *
+ * Easing:
+ *   --ease-out   → UI elements entering a state (hover, open). Starts fast, decelerates.
+ *   --ease-in    → UI elements leaving a state (release, close). Starts slow, accelerates.
+ *   --ease-snappy → Instant-feeling micro-interactions (button press, toggle).
+ *
+ * Duration:
+ *   100ms → Instant (color, opacity micro-states)
+ *   180ms → Fast    (spatial movement, hover)
+ *   250ms → Standard (panels, modals entering)
+ *   350ms → Deliberate (page-level transitions)
+ */
+:root {
+  --ease-out:   cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in:    cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-snappy: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+
+  --dur-instant: 100ms;
+  --dur-fast:    180ms;
+  --dur-base:    250ms;
+}
+
+/* ─── Base ──────────────────────────────────────────────────────────────── */
+@layer base {
+  body {
+    @apply bg-slate-950 text-slate-100 font-flex-sans antialiased;
+    background-image: none;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  /*
+   * Global default: color/border transitions feel instant.
+   * Spatial transforms (translateY/scale) are handled per-component.
+   * Do NOT set transition-all here — it causes paint thrashing.
+   */
+  a, button, input, select, textarea, [role="button"] {
+    transition-property: color, background-color, border-color, opacity, box-shadow;
+    transition-timing-function: var(--ease-snappy);
+    transition-duration: var(--dur-instant);
+  }
+
+  /* Keyboard focus ring — consistent, unobtrusive */
+  :focus-visible {
+    outline: 2px solid rgba(59, 130, 246, 0.7);
+    outline-offset: 3px;
+    border-radius: 8px;
+  }
+
+  /* Prevent iOS input zoom */
+  input, select, textarea {
+    font-size: max(16px, 1em);
+  }
+
+  /* Kill tap highlight on mobile */
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Respect reduced motion preferences */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+/* ─── Component Utilities ──────────────────────────────────────────────── */
+@layer components {
+
+  /* ─── Typography Scale ─────────────────────────────────────────────── */
+  .flex-title-lg {
+    @apply text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-white uppercase leading-none;
+  }
+  .flex-title-md {
+    @apply text-2xl sm:text-3xl font-bold tracking-tight text-white uppercase leading-tight;
+  }
+  .flex-title-sm {
+    @apply text-lg sm:text-xl font-bold tracking-tight text-white uppercase leading-snug;
+  }
+
+  .flex-label {
+    @apply text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 leading-none;
+  }
+  .flex-meta {
+    @apply text-[9px] font-bold uppercase tracking-widest text-slate-600 leading-none;
+  }
+
+  /* ─── Surfaces ──────────────────────────────────────────────────────── */
+  .flex-card {
+    @apply bg-slate-900 border border-slate-800 rounded-2xl;
+    /* Only transition border-color and shadow — not layout properties */
+    transition-property: border-color, box-shadow, background-color;
+    transition-duration: var(--dur-fast);
+    transition-timing-function: var(--ease-snappy);
+  }
+  .flex-card-padding {
+    @apply p-6 sm:p-8;
+  }
+  .flex-section-header {
+    @apply flex items-center justify-between mb-8 pb-4 border-b border-slate-900;
+  }
+
+  /* ─── Inputs ─────────────────────────────────────────────────────────── */
+  .flex-input {
+    @apply w-full bg-slate-950 border border-slate-900 rounded-xl px-4 py-3
+           text-sm text-white placeholder-slate-700
+           focus:outline-none;
+    transition-property: border-color, box-shadow, background-color;
+    transition-duration: var(--dur-fast);
+    transition-timing-function: var(--ease-snappy);
+  }
+  .flex-input:hover {
+    border-color: rgba(100, 116, 139, 0.6); /* slate-500/60 */
+  }
+  .flex-input:focus {
+    border-color: rgba(59, 130, 246, 0.8);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1), inset 0 1px 1px rgba(0,0,0,0.2);
+    background-color: rgba(15, 23, 42, 0.8);
+  }
+
+  /* ─── Buttons ────────────────────────────────────────────────────────── */
+  /*
+   * Primary Button: Resting shadow is subtle. On hover, a stronger glow
+   * emerges and the button lifts 1px — just enough to feel tactile.
+   * Press (active) compresses it back down immediately.
+   */
+  .flex-button-primary {
+    @apply bg-blue-600 text-white font-bold py-3 px-6 rounded-xl
+           text-[10px] uppercase tracking-widest
+           flex items-center justify-center gap-2;
+    box-shadow:
+      0 1px 3px rgba(0, 0, 0, 0.3),
+      0 0 0 1px rgba(59, 130, 246, 0.3) inset;
+    /* Separate properties for precision control */
+    transition-property: background-color, box-shadow, transform;
+    transition-duration: var(--dur-fast);
+    transition-timing-function: var(--ease-out);
+  }
+  .flex-button-primary:hover {
+    background-color: #3b7ee8; /* blue-500 equivalent */
+    box-shadow:
+      0 4px 20px rgba(59, 130, 246, 0.3),
+      0 1px 3px rgba(0, 0, 0, 0.3),
+      0 0 0 1px rgba(59, 130, 246, 0.4) inset;
+    transform: translateY(-1px);
+  }
+  .flex-button-primary:active {
+    transform: translateY(0px) scale(0.985);
+    transition-duration: var(--dur-instant);
+    transition-timing-function: var(--ease-in);
+    box-shadow:
+      0 1px 3px rgba(0, 0, 0, 0.4),
+      0 0 0 1px rgba(59, 130, 246, 0.2) inset;
+  }
+
+  /*
+   * Secondary Button: Gains a soft border highlight on hover.
+   * No glow — stays neutral and grounded.
+   */
+  .flex-button-secondary {
+    @apply bg-transparent border border-slate-800 text-slate-400 font-bold
+           py-3 px-6 rounded-xl text-[10px] uppercase tracking-widest
+           flex items-center justify-center gap-2;
+    transition-property: border-color, color, background-color, transform, box-shadow;
+    transition-duration: var(--dur-fast);
+    transition-timing-function: var(--ease-out);
+  }
+  .flex-button-secondary:hover {
+    border-color: rgba(100, 116, 139, 0.8); /* slate-600 */
+    color: #f1f5f9; /* slate-100 */
+    background-color: rgba(30, 41, 59, 0.5); /* slate-800/50 */
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  }
+  .flex-button-secondary:active {
+    transform: translateY(0px) scale(0.985);
+    transition-duration: var(--dur-instant);
+    transition-timing-function: var(--ease-in);
+  }
+
+  /* ─── Micro-Lift ─────────────────────────────────────────────────────── */
+  /*
+   * For cards and list items. Lifts 2px (not 3) — more premium, less toy-like.
+   * Shadow is directional (upward spread) to simulate real light.
+   */
+  .micro-lift {
+    transition-property: transform, box-shadow, border-color;
+    transition-duration: var(--dur-fast);
+    transition-timing-function: var(--ease-out);
+  }
+  .micro-lift:hover {
+    transform: translateY(-2px);
+    box-shadow:
+      0 8px 24px -8px rgba(0, 0, 0, 0.5),
+      0 2px 8px -4px rgba(0, 0, 0, 0.3);
+    border-color: rgba(71, 85, 105, 0.8); /* slate-600/80 */
+  }
+  .micro-lift:active {
+    transform: translateY(0px);
+    transition-duration: var(--dur-instant);
+  }
+
+  /* ─── Interactive Rows ───────────────────────────────────────────────── */
+  /*
+   * Rows shift right — not up. This gives a sense of "selecting" or "deepening,"
+   * which is appropriate for list items. Shift reduced to 3px (was 4px) for subtlety.
+   */
+  .interactive-row {
+    @apply flex items-center justify-between p-5 bg-slate-900 border border-slate-800 rounded-2xl;
+    transition-property: transform, border-color, background-color;
+    transition-duration: var(--dur-fast);
+    transition-timing-function: var(--ease-out);
+  }
+  .interactive-row:hover {
+    border-color: rgba(71, 85, 105, 0.7);
+    background-color: rgba(30, 41, 59, 0.5);
+    transform: translateX(3px);
+  }
+  .interactive-row:active {
+    transform: translateX(1px);
+    transition-duration: var(--dur-instant);
+  }
+
+  /* ─── Icon Nudge ─────────────────────────────────────────────────────── */
+  /*
+   * Apply to ArrowRight icons inside links/buttons.
+   * Parent must have 'group' class. Completes in 180ms with ease-out.
+   */
+  .icon-nudge {
+    transition-property: transform;
+    transition-duration: var(--dur-fast);
+    transition-timing-function: var(--ease-out);
+    display: inline-block;
+  }
+  .group:hover .icon-nudge {
+    transform: translateX(3px);
+  }
+
+  /* ─── Custom Scrollbar ───────────────────────────────────────────────── */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: rgba(71, 85, 105, 0.4); /* slate-600/40 */
+    border-radius: 99px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(100, 116, 139, 0.6); /* slate-500/60 */
+  }
+
+  /* ─── Pulse Dot ──────────────────────────────────────────────────────── */
+  .pulse-dot {
+    @apply w-1.5 h-1.5 rounded-full bg-green-500;
+    /* Slower pulse — 2.5s feels more like a calm "heartbeat", less frantic */
+    animation: pulse-ring 2.5s var(--ease-out) infinite;
+  }
+
+  /* ─── Skeleton ───────────────────────────────────────────────────────── */
+  .skeleton {
+    @apply rounded-xl bg-slate-800/60 relative overflow-hidden;
+  }
+  .skeleton::after {
+    content: '';
+    @apply absolute inset-0;
+    background: linear-gradient(
+      105deg,
+      transparent 40%,
+      rgba(255, 255, 255, 0.035) 50%,
+      transparent 60%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.6s ease infinite;
+  }
+
+  /* ─── Mobile: Disable hover transforms ──────────────────────────────── */
+  /* Touch devices don't have hover — transforms cause a sticky state. */
+  @media (hover: none) {
+    .micro-lift:hover,
+    .interactive-row:hover,
+    .flex-button-primary:hover,
+    .flex-button-secondary:hover {
+      transform: none;
+    }
+    .micro-lift:hover {
+      box-shadow: none;
+    }
+    /* Active states still fire on mobile tap */
+    .micro-lift:active       { transform: scale(0.98); }
+    .interactive-row:active  { transform: scale(0.98); }
+    .flex-button-primary:active {
+      transform: scale(0.965);
+      background-color: #2563eb; /* blue-600 */
+    }
+    .flex-button-secondary:active {
+      transform: scale(0.965);
+    }
+  }
+}
+
+/* ─── Keyframes ─────────────────────────────────────────────────────────── */
+@keyframes pulse-ring {
+  0%, 100% { box-shadow: 0 0 0 0   rgba(34, 197, 94, 0.45); }
+  60%       { box-shadow: 0 0 0 5px rgba(34, 197, 94, 0); }
+}
+
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@keyframes badge-pop {
+  0%   { opacity: 0; transform: scale(0.65); }
+  70%  { transform: scale(1.08); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── Layout Utilities ──────────────────────────────────────────────────── */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+  @apply flex items-center justify-center;
+}
+
+/* One-shot reveal animation — apply directly with style={{ animation: 'fade-up 250ms ease both' }} */
+.animate-fade-up {
+  animation: fade-up 250ms var(--ease-out) both;
+}
