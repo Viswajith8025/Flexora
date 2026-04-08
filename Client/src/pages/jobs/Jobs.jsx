@@ -330,7 +330,7 @@ const Jobs = () => {
 
   const handleApply = useCallback(async (job) => {
     if (!currentUser) {
-      navigate('/flexoraauth');
+      navigate('/flexoraauth', { state: { from: '/jobs' } });
       return;
     }
 

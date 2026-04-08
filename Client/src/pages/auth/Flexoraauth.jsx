@@ -15,7 +15,7 @@ import {
   ChevronLeft
 } from "lucide-react";
 import logo from "../../assets/logooo.png";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 
 const FlexoraAuth = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -29,6 +29,10 @@ const FlexoraAuth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // The route the user was trying to reach before being sent here
+  const intendedRoute = location.state?.from || "/";
 
   const handleChange = (e) => {
     setFormData({
@@ -69,9 +73,8 @@ const FlexoraAuth = () => {
         role: response.data.user.role === 'provider' ? 'job_provider' : 'job_seeker'
       }));
 
-      // In the new flow, we redirect to home
-      navigate('/');
-      window.location.reload(); 
+      // Redirect to the page the user originally intended to visit
+      navigate(intendedRoute, { replace: true });
     } catch (error) {
       console.error('Auth error:', error);
       setError(error.response?.data?.msg || 'Authentication failed. Please try again.');

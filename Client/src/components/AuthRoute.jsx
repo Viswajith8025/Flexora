@@ -1,15 +1,18 @@
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../services/api';
 
 const AuthRoute = ({ children, requiredRole }) => {
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     const checkAuth = async () => {
       const token = localStorage.getItem('token');
       if (!token) {
-        navigate('/flexoraauth');
+        // Pass the current location as state so the auth page knows
+        // where to redirect after successful login
+        navigate('/flexoraauth', { state: { from: location.pathname }, replace: true });
         return;
       }
 
@@ -35,12 +38,12 @@ const AuthRoute = ({ children, requiredRole }) => {
         console.error('Auth check error:', error);
         localStorage.removeItem('token');
         localStorage.removeItem('user');
-        navigate('/flexoraauth');
+        navigate('/flexoraauth', { state: { from: location.pathname }, replace: true });
       }
     };
 
     checkAuth();
-  }, [navigate, requiredRole]);
+  }, [navigate, requiredRole, location.pathname]);
 
   return children;
 };
