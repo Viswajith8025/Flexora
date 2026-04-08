@@ -45,6 +45,7 @@ app.get("/api/test", (req, res) => res.send("Test route working ✅"));
 
 // Serve Static Files in Production
 const clientDistPath = path.join(__dirname, "../Client/dist");
+console.log("📂 Serving static files from:", clientDistPath);
 app.use(express.static(clientDistPath));
 
 // Catch-all route for SPA
