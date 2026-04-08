@@ -8,7 +8,7 @@ import App from "./App";
 import FlexoraAuth from "./pages/auth/Flexoraauth";
 import UserProfilePage from "./components/Userprofile";
 import About from "./components/About";
-import Jobs from "./pages/jobs/jobs";
+import Jobs from "./pages/jobs/Jobs";
 import PostJob from "./pages/jobs/Postjobs";
 
 createRoot(document.getElementById("root")).render(
