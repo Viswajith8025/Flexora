@@ -20,17 +20,19 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const server = http.createServer(app);
 
+const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
+
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:5173", // <-- Set to your frontend URL
-    credentials: true,               // <-- Allow credentials for Socket.io
+    origin: FRONTEND_URL, 
+    credentials: true,
   },
 });
 
 // Middleware
 app.use(cors({
-  origin: "http://localhost:5173",   // <-- Set to your frontend URL
-  credentials: true                  // <-- Allow credentials for API
+  origin: FRONTEND_URL,
+  credentials: true
 }));
 app.use(express.json());
 
@@ -39,21 +41,8 @@ app.use("/api/auth", authRoutes);
 app.use("/api/jobs", jobRoutes);
 app.use("/api/chat", chatRoutes);
 
-
 // Test routes
-app.get("/api/test", (req, res) => res.send("Test route working ✅"));
-
-// Serve Static Files in Production
-const clientDistPath = path.join(__dirname, "../Client/dist");
-console.log("📂 Serving static files from:", clientDistPath);
-app.use(express.static(clientDistPath));
-
-// Catch-all route for SPA
-app.get("*", (req, res) => {
-  if (!req.path.startsWith('/api/')) {
-    res.sendFile(path.join(clientDistPath, "index.html"));
-  }
-});
+app.get("/api/test", (req, res) => res.send("Flexora API Operational ✅"));
 
 // Socket.io Handling
 io.on("connection", (socket) => {
