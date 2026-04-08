@@ -1,0 +1,14 @@
+{
+  "name": "flexora-root",
+  "version": "1.0.0",
+  "description": "Monorepo orchestration for Flexora platform",
+  "scripts": {
+    "install-all": "npm install --prefix Client && npm install --prefix Server",
+    "build": "npm install --prefix Client && npm run build --prefix Client && npm install --prefix Server",
+    "start": "node Server/index.js",
+    "render-build": "npm run build"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

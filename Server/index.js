@@ -9,7 +9,13 @@ import { Server } from "socket.io";
 import chatRoutes from "./routes/chats.js";
 
 
+import path from "path";
+import { fileURLToPath } from "url";
+
 dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const server = http.createServer(app);
@@ -35,8 +41,18 @@ app.use("/api/chat", chatRoutes);
 
 
 // Test routes
-app.get("/", (req, res) => res.send("Flexora Backend Running ✅"));
-app.get("/test", (req, res) => res.send("Test route working ✅"));
+app.get("/api/test", (req, res) => res.send("Test route working ✅"));
+
+// Serve Static Files in Production
+const clientDistPath = path.join(__dirname, "../Client/dist");
+app.use(express.static(clientDistPath));
+
+// Catch-all route for SPA
+app.get("*", (req, res) => {
+  if (!req.path.startsWith('/api/')) {
+    res.sendFile(path.join(clientDistPath, "index.html"));
+  }
+});
 
 // Socket.io Handling
 io.on("connection", (socket) => {
