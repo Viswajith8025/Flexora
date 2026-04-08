@@ -41,6 +41,19 @@ app.use("/api/auth", authRoutes);
 app.use("/api/jobs", jobRoutes);
 app.use("/api/chat", chatRoutes);
 
+// Root route
+app.get("/", (req, res) => {
+  res.json({ 
+    message: "Flexora API is Live and Operational ✅",
+    endpoints: {
+      auth: "/api/auth",
+      jobs: "/api/jobs",
+      chat: "/api/chat",
+      test: "/api/test"
+    }
+  });
+});
+
 // Test routes
 app.get("/api/test", (req, res) => res.send("Flexora API Operational ✅"));
 
