@@ -10,6 +10,7 @@ import UserProfilePage from "./components/Userprofile";
 import About from "./components/About";
 import Jobs from "./pages/jobs/Jobs";
 import PostJob from "./pages/jobs/Postjobs";
+import MyJobs from "./pages/jobs/MyJobs";
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
@@ -40,6 +41,11 @@ createRoot(document.getElementById("root")).render(
         <Route path="/userprofile" element={
           <AuthRoute>
             <UserProfilePage />
+          </AuthRoute>
+        } />
+        <Route path="/my-jobs" element={
+          <AuthRoute requiredRole="job_provider">
+            <MyJobs />
           </AuthRoute>
         } />
         

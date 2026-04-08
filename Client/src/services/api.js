@@ -63,6 +63,7 @@ export default {
   deleteJob: (id) => api.delete(`/admin/jobs/${id}`),
 
   // Provider Management
+  getMyJobs: () => api.get('/jobs/my-jobs'),
   getProviderJobs: () => api.get('/jobs/provider/jobs'),
   updateApplicationStatus: (data) => api.put('/jobs/application/status', data)
 };

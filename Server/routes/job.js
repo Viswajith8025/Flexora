@@ -9,6 +9,7 @@ router.post("/", authenticate, createJob);
 router.get("/my-applications", authenticate, getMyApplications);
 router.get("/saved", authenticate, getSavedJobs);
 router.post("/save/:id", authenticate, toggleSaveJob);
+router.get("/my-jobs", authenticate, getProviderJobs);
 router.get("/provider/jobs", authenticate, getProviderJobs);
 router.put("/application/status", authenticate, updateApplicationStatus);
 router.get("/ping", (req, res) => res.json({ msg: "Tactical Job Route Operational" }));
