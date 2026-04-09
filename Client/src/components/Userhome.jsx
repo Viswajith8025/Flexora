@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import api from "../services/api";
 import toast from 'react-hot-toast';
 import JobCard from "./Jobcard";
@@ -47,6 +48,7 @@ import {
 } from 'lucide-react';
 import logo from '../assets/logooo.png';
 import SlideButton from './SlideButton';
+import NotificationDropdown from './NotificationDropdown';
 
 // ─── Application Success Screen ───────────────────────────────────────────────
 const ApplicationSuccessModal = ({ job, onClose }) => (
@@ -129,7 +131,7 @@ const ApplicationSuccessModal = ({ job, onClose }) => (
 );
 
 const FlexoraDashboard = () => {
-  const [currentUser, setCurrentUser] = useState(null);
+  const { user: currentUser, logout } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [location, setLocation] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -151,9 +153,6 @@ const FlexoraDashboard = () => {
   const [appliedJobs, setAppliedJobs] = useState(new Set());
 
   useEffect(() => {
-    const userData = JSON.parse(localStorage.getItem('user'));
-    setCurrentUser(userData);
-
     // Mock featured jobs data
     setFeaturedJobs([
       {
@@ -194,17 +193,27 @@ const FlexoraDashboard = () => {
       }
     ]);
 
-    if (userData) {
+    if (currentUser) {
       const applied = JSON.parse(localStorage.getItem('appliedJobs') || '[]');
       setAppliedJobs(new Set(applied));
       fetchDashboardData();
       
-      // Fetch real recommended jobs
-      api.getJobs({ limit: 3 }).then(({ data }) => {
-        setFeaturedJobs(data.slice(0, 3));
-      }).catch(err => console.error("Error fetching recommended jobs:", err));
+      // Fetch real recommended jobs with safety net
+      async function fetchRecommended() {
+         try {
+            const { data } = await api.getJobs({ limit: 3 });
+            if (data && Array.isArray(data)) {
+               setFeaturedJobs(data);
+            }
+         } catch (err) {
+            console.error("CRITICAL Marketplace Fetch Error:", err.response?.data || err.message);
+            // Default tiles already set in initial state if this fails
+         }
+      }
+
+      fetchRecommended();
     }
-  }, []);
+  }, [currentUser]);
 
   const handleApply = useCallback(async (job) => {
     if (!currentUser) {
@@ -249,14 +258,13 @@ const FlexoraDashboard = () => {
 
   const fetchDashboardData = async () => {
     setIsApplicationsLoading(true);
-    const userData = JSON.parse(localStorage.getItem('user'));
-    if (userData?.role === 'job_provider') setIsPostedJobsLoading(true);
+    if (currentUser?.role === 'job_provider') setIsPostedJobsLoading(true);
     
     try {
       const { data: apps } = await api.getMyApplications();
       setMyApplications(apps);
       
-      if (userData?.role === 'job_provider') {
+      if (currentUser?.role === 'job_provider') {
         const { data: jobs } = await api.getProviderJobs();
         setMyPostedJobs(jobs);
       }
@@ -298,34 +306,40 @@ const FlexoraDashboard = () => {
   };
 
   const handleLogout = () => {
-    localStorage.clear();
-    window.location.href = "/";
+    logout();
+    navigate('/');
   };
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-200">
       <nav className="fixed top-0 w-full z-[100] px-6 h-20 flex justify-between items-center bg-slate-950/80 border-b border-slate-900 backdrop-blur-md">
         <div className="flex items-center gap-8">
-          <Link to="/" className="flex items-center gap-2">
-            <img src={logo} alt="Flexora" className="h-11 w-auto" />
+          <Link to="/" className="flex items-center gap-3">
+            <img src={logo} alt="Flexora" className="h-16 w-auto" />
           </Link>
           <div className="hidden md:flex items-center gap-6">
             <span className="text-white font-bold text-[10px] uppercase tracking-widest border-b-2 border-blue-600 pb-1 cursor-default">Dashboard</span>
-            <Link to="/jobs" className="text-slate-500 font-bold text-[10px] uppercase tracking-widest hover:text-white transition-colors">Jobs</Link>
+            {currentUser?.role === 'job_provider' && (
+              <Link to="/post-job" className="text-slate-500 font-bold text-[10px] uppercase tracking-widest hover:text-white transition-colors">Post Job</Link>
+            )}
+            {currentUser?.role === 'admin' && (
+              <Link to="/flexora-admin" className="text-blue-500 font-bold text-[10px] uppercase tracking-widest hover:text-blue-400 transition-colors">Admin Hub</Link>
+            )}
             <Link to="/about" className="text-slate-500 font-bold text-[10px] uppercase tracking-widest hover:text-white transition-colors">How it Works</Link>
           </div>
         </div>
 
         <div className="flex items-center gap-6">
-          <button className="text-slate-500 hover:text-white transition-colors relative">
-             <Bell size={20} />
-             <span className="absolute -top-1 -right-1 w-2 h-2 bg-blue-600 rounded-full" />
-          </button>
+          <NotificationDropdown />
           
           <div className="flex items-center gap-3 pl-6 border-l border-slate-900">
              <div className="text-right hidden sm:block">
                 <div className="flex-label text-white mb-1">{currentUser?.name || "Member"}</div>
-                <div className="flex-meta">{currentUser?.role?.replace('_', ' ')}</div>
+                <div className="flex-meta capitalize text-blue-500 font-bold">
+                   {currentUser?.role === 'job_provider' ? 'Provider' : 
+                    currentUser?.role === 'job_seeker' ? 'Seeker' : 
+                    currentUser?.role?.replace('_', ' ') || 'User'}
+                </div>
              </div>
              <div className="group relative">
                 <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white font-bold cursor-pointer">
@@ -490,98 +504,103 @@ const FlexoraDashboard = () => {
               )}
 
               {/* My Applications (Job Seeker View) */}
-              <section>
-                 <div className="flex-section-header">
-                    <h3 className="flex-label text-white flex items-center gap-2">
-                       <Activity size={14} className="text-blue-500" /> My Applications
-                    </h3>
-                    <div className="flex-meta text-slate-600">
-                       Last updated {new Date().toLocaleDateString()}
-                    </div>
-                 </div>
+              {currentUser?.role === 'job_seeker' && (
+                <section>
+                   <div className="flex-section-header">
+                      <h3 className="flex-label text-white flex items-center gap-2">
+                         <Activity size={14} className="text-blue-500" /> My Applications
+                      </h3>
+                      <div className="flex-meta text-slate-600">
+                         Last updated {new Date().toLocaleDateString()}
+                      </div>
+                   </div>
 
-                 {isApplicationsLoading ? (
-                    <div className="flex justify-center py-20">
-                       <div className="w-8 h-8 border-2 border-slate-800 border-t-blue-500 rounded-full animate-spin" />
-                    </div>
-                 ) : myApplications.length === 0 ? (
-                    <div className="flex-card min-h-[240px] border-dashed flex flex-col items-center justify-center p-12 text-center">
-                       <div className="w-16 h-16 bg-slate-950 rounded-2xl flex items-center justify-center mb-6">
-                          <Target className="text-slate-800" size={32} />
-                       </div>
-                       <p className="text-slate-500 text-sm font-medium italic mb-2">You haven't applied to any jobs yet.</p>
-                       <p className="text-slate-700 text-xs mb-8">Find something that fits and hit Apply.</p>
-                        <SlideButton to="/jobs" className="!px-8 !py-4">
-                           Browse Jobs
-                        </SlideButton>
-                    </div>
-                 ) : (
-                    <div className="space-y-3">
-                       {myApplications.map((app) => (
-                          <motion.div
-                             key={app._id}
-                             initial={{ opacity: 0, y: 10 }}
-                             animate={{ opacity: 1, y: 0 }}
-                             className="interactive-row group"
-                          >
-                             <div className="flex items-center gap-5 flex-1 overflow-hidden">
-                                <div className="w-11 h-11 rounded-xl bg-slate-950 flex items-center justify-center text-blue-500 border border-slate-800 shrink-0">
-                                   <Briefcase size={18} />
-                                </div>
-                                <div className="overflow-hidden">
-                                   <h4 className="text-white font-bold text-sm tracking-tight truncate leading-tight mb-1">{app.title || "Job Application"}</h4>
-                                   <div className="flex items-center gap-4">
-                                      <span className="flex items-center gap-1.5 flex-meta"><Clock size={11} className="text-blue-500" /> Applied {new Date(app.appliedAt).toLocaleDateString()}</span>
-                                   </div>
-                                </div>
-                             </div>
+                   {/* ... existing application logic ... */}
+                   {isApplicationsLoading ? (
+                      <div className="flex justify-center py-20">
+                         <div className="w-8 h-8 border-2 border-slate-800 border-t-blue-500 rounded-full animate-spin" />
+                      </div>
+                   ) : myApplications.length === 0 ? (
+                      <div className="flex-card min-h-[240px] border-dashed flex flex-col items-center justify-center p-12 text-center">
+                         <div className="w-16 h-16 bg-slate-950 rounded-2xl flex items-center justify-center mb-6">
+                            <Target className="text-slate-800" size={32} />
+                         </div>
+                         <p className="text-slate-500 text-sm font-medium italic mb-2">You haven't applied to any jobs yet.</p>
+                         <p className="text-slate-700 text-xs mb-8">Find something that fits and hit Apply.</p>
+                          <SlideButton to="/jobs" className="!px-8 !py-4">
+                             Browse Jobs
+                          </SlideButton>
+                      </div>
+                   ) : (
+                      <div className="space-y-3">
+                         {myApplications.map((app) => (
+                            <motion.div
+                               key={app._id}
+                               initial={{ opacity: 0, y: 10 }}
+                               animate={{ opacity: 1, y: 0 }}
+                               className="interactive-row group"
+                            >
+                               <div className="flex items-center gap-5 flex-1 overflow-hidden">
+                                  <div className="w-11 h-11 rounded-xl bg-slate-950 flex items-center justify-center text-blue-500 border border-slate-800 shrink-0">
+                                     <Briefcase size={18} />
+                                  </div>
+                                  <div className="overflow-hidden">
+                                     <h4 className="text-white font-bold text-sm tracking-tight truncate leading-tight mb-1">{app.title || "Job Application"}</h4>
+                                     <div className="flex items-center gap-4">
+                                        <span className="flex items-center gap-1.5 flex-meta"><Clock size={11} className="text-blue-500" /> Applied {new Date(app.appliedAt).toLocaleDateString()}</span>
+                                     </div>
+                                  </div>
+                               </div>
 
-                             <div className="flex items-center gap-4 shrink-0">
-                                <div className={`px-4 py-1.5 rounded-lg flex-meta border shadow-sm ${
-                                   app.status === 'accepted' 
-                                   ? "bg-green-600/10 text-green-500 border-green-500/20" 
-                                   : app.status === 'rejected' 
-                                   ? "bg-red-600/10 text-red-500 border-red-500/20" 
-                                   : "bg-blue-600/10 text-blue-500 border-blue-500/20"
-                                }`}>
-                                   {app.status === 'accepted' ? 'Hired' : app.status === 'rejected' ? 'Not selected' : 'In review'}
-                                </div>
-                                <button 
-                                   onClick={() => setSelectedApplicationDetails(app)}
-                                   className="w-10 h-10 flex items-center justify-center hover:bg-slate-800 rounded-xl text-slate-500 hover:text-white transition-colors"
-                                >
-                                   <ArrowRight size={18} />
-                                </button>
-                             </div>
-                          </motion.div>
-                       ))}
-                    </div>
-                 )}
-              </section>
+                               <div className="flex items-center gap-4 shrink-0">
+                                  <div className={`px-4 py-1.5 rounded-lg flex-meta border shadow-sm ${
+                                     app.status === 'accepted' 
+                                     ? "bg-green-600/10 text-green-500 border-green-500/20" 
+                                     : app.status === 'rejected' 
+                                     ? "bg-red-600/10 text-red-500 border-red-500/20" 
+                                     : "bg-blue-600/10 text-blue-500 border-blue-500/20"
+                                  }`}>
+                                     {app.status === 'accepted' ? 'Hired' : app.status === 'rejected' ? 'Not selected' : 'In review'}
+                                  </div>
+                                  <button 
+                                     onClick={() => setSelectedApplicationDetails(app)}
+                                     className="w-10 h-10 flex items-center justify-center hover:bg-slate-800 rounded-xl text-slate-500 hover:text-white transition-colors"
+                                  >
+                                     <ArrowRight size={18} />
+                                  </button>
+                               </div>
+                            </motion.div>
+                         ))}
+                      </div>
+                   )}
+                </section>
+              )}
 
-              {/* Recommended Jobs */}
-              <section>
-                 <div className="flex-section-header">
-                    <h3 className="flex-label text-white flex items-center gap-2">
-                       <Sparkles size={14} className="text-blue-500" /> Recommended For You
-                    </h3>
-                 </div>
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {featuredJobs.map((job) => (
-                       <JobCard
-                          key={job._id || job.id}
-                          job={job}
-                          onApply={handleApply}
-                          isApplying={loadingApplyId === (job._id || job.id)}
-                          customAction={appliedJobs.has(job._id || job.id) ? (
-                             <div className="flex-meta text-green-500 bg-green-500/10 px-4 py-1.5 border border-green-500/20 rounded-lg italic text-center w-full">
-                                Already Applied
-                             </div>
-                          ) : undefined}
-                       />
-                    ))}
-                 </div>
-              </section>
+              {/* Recommended Jobs (Seeker Only) */}
+              {currentUser?.role === 'job_seeker' && (
+                <section>
+                   <div className="flex-section-header">
+                      <h3 className="flex-label text-white flex items-center gap-2">
+                         <Sparkles size={14} className="text-blue-500" /> Recommended For You
+                      </h3>
+                   </div>
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {featuredJobs.map((job) => (
+                         <JobCard
+                            key={job._id || job.id}
+                            job={job}
+                            onApply={handleApply}
+                            isApplying={loadingApplyId === (job._id || job.id)}
+                            customAction={appliedJobs.has(job._id || job.id) ? (
+                               <div className="flex-meta text-green-500 bg-green-500/10 px-4 py-1.5 border border-green-500/20 rounded-lg italic text-center w-full">
+                                  Already Applied
+                               </div>
+                            ) : undefined}
+                         />
+                      ))}
+                   </div>
+                </section>
+              )}
            </div>
 
            {/* Sidebar Intel */}

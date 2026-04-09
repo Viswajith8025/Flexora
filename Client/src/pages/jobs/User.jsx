@@ -13,10 +13,10 @@ import {
   Phone,
   ArrowRight
 } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 const UserRoles = () => {
-  // Check login status
-  const currentUser = JSON.parse(localStorage.getItem("user"));
+  const { user: currentUser } = useAuth();
 
   const steps = [
     {

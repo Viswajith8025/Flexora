@@ -21,12 +21,16 @@ import {
   Loader2,
   AlertCircle,
   BookmarkCheck,
-  Bell
+  Bell,
+  User
 } from "lucide-react";
 import logo from "../../assets/logooo.png";
 import JobCard from "../../components/Jobcard";
 import SlideButton from "../../components/SlideButton";
 import AuthModal from "../../components/AuthModal";
+import FilterSheet from "../../components/FilterSheet";
+import NotificationDropdown from "../../components/NotificationDropdown";
+import { useAuth } from "../../context/AuthContext";
 
 // ─── Application Success Screen ───────────────────────────────────────────────
 const ApplicationSuccessModal = ({ job, onClose }) => (
@@ -238,12 +242,13 @@ const JobDetailModal = ({ job, onClose, onApply, isApplying, hasApplied, onSave,
 // ─── Main Jobs Page ───────────────────────────────────────────────────────────
 const Jobs = () => {
   const navigate = useNavigate();
-  const [currentUser, setCurrentUser] = useState(null);
+  const { user: currentUser } = useAuth();
   const [jobs, setJobs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [locationFilter, setLocationFilter] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const [jobTypeFilter, setJobTypeFilter] = useState("");
   const [selectedJob, setSelectedJob] = useState(null);
   const [loadingApplyId, setLoadingApplyId] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
@@ -259,24 +264,32 @@ const Jobs = () => {
   ].filter(Boolean).length;
 
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem('user'));
-    setCurrentUser(user);
     fetchJobs();
 
-    if (user) {
-      const saved = JSON.parse(localStorage.getItem('savedJobs') || '[]');
-      setSavedJobs(new Set(saved));
+    if (currentUser) {
+      // Sync personal data from server for real-time accuracy
+      const syncUserData = async () => {
+        try {
+          // Fetch real applications
+          const { data: applications } = await api.getMyApplications();
+          const appliedIds = new Set(applications.map(app => app.jobId));
+          setAppliedJobs(appliedIds);
+          localStorage.setItem('appliedJobs', JSON.stringify([...appliedIds]));
 
-      const applied = JSON.parse(localStorage.getItem('appliedJobs') || '[]');
-      setAppliedJobs(new Set(applied));
+          // Saved jobs (keeping local for performance, but sync logic can be added)
+          const saved = JSON.parse(localStorage.getItem('savedJobs') || '[]');
+          setSavedJobs(new Set(saved));
+        } catch (error) {
+          console.error("Auth Sync Error:", error);
+        }
+      };
+      
+      syncUserData();
     } else {
-      // Clear personal data for guests to avoid 'demo' feel/bugs
       setSavedJobs(new Set());
       setAppliedJobs(new Set());
-      localStorage.removeItem('savedJobs');
-      localStorage.removeItem('appliedJobs');
     }
-  }, []);
+  }, [currentUser]);
 
   const fetchJobs = async () => {
     try {
@@ -386,9 +399,13 @@ const Jobs = () => {
 
   const categories = [
     { id: "all", name: "All Sectors", icon: "🌐" },
-    { id: "hospitality", name: "Hospitality", icon: "🍽️" },
+    { id: "general", name: "General", icon: "📋" },
     { id: "events", name: "Events", icon: "🎪" },
-    { id: "logistics", name: "Logistics", icon: "🚚" },
+    { id: "digital", name: "Digital", icon: "💻" },
+    { id: "delivery", name: "Delivery", icon: "🚚" },
+    { id: "retail", name: "Retail", icon: "🛒" },
+    { id: "hospitality", name: "Hospitality", icon: "🍽️" },
+    { id: "logistics", name: "Logistics", icon: "📦" },
     { id: "security", name: "Security", icon: "🛡️" },
     { id: "technical", name: "Technical", icon: "⚙️" },
     { id: "creative", name: "Creative", icon: "🎨" },
@@ -400,10 +417,11 @@ const Jobs = () => {
       const matchesSearch = job.title?.toLowerCase().includes(q) || job.company?.toLowerCase().includes(q);
       const matchesLocation = !locationFilter || job.location?.toLowerCase().includes(locationFilter.toLowerCase());
       const matchesCategory = categoryFilter === "all" || job.category?.toLowerCase() === categoryFilter.toLowerCase();
+      const matchesJobType = !jobTypeFilter || job.jobType?.toLowerCase() === jobTypeFilter.toLowerCase();
       const matchesSaved = !savedOnly || savedJobs.has(job.id);
-      return matchesSearch && matchesLocation && matchesCategory && matchesSaved;
+      return matchesSearch && matchesLocation && matchesCategory && matchesJobType && matchesSaved;
     });
-  }, [jobs, searchQuery, locationFilter, categoryFilter, savedJobs, savedOnly]);
+  }, [jobs, searchQuery, locationFilter, categoryFilter, jobTypeFilter, savedJobs, savedOnly]);
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-200">
@@ -416,11 +434,25 @@ const Jobs = () => {
 
           <div className="hidden md:flex items-center gap-8">
             <Link to="/" className="text-sm font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-colors">home</Link>
-            <Link to="/#how-it-works" className="text-sm font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-colors">how it works</Link>
             <Link to="/about" className="text-sm font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-colors">about</Link>
-            <Link to="/jobs" className="text-sm font-bold uppercase tracking-widest text-white transition-colors">jobs</Link>
-            <Link to="/flexoraauth" className="text-sm font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-colors">log in</Link>
-            <Link to="/flexoraauth" className="text-sm font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-colors">signup</Link>
+            <Link to="/jobs" className="text-sm font-bold uppercase tracking-widest text-white transition-colors underline underline-offset-8 decoration-blue-500 decoration-2">jobs</Link>
+            
+            {currentUser ? (
+              <div className="flex items-center gap-6 pl-4 border-l border-slate-900">
+                <NotificationDropdown />
+                <Link to="/userprofile" className="flex items-center gap-2 group">
+                  <div className="w-8 h-8 rounded-full bg-blue-600/10 border border-blue-600/20 flex items-center justify-center text-blue-500 group-hover:bg-blue-600 group-hover:text-white transition-all">
+                    <User size={14} />
+                  </div>
+                  <span className="text-sm font-bold uppercase tracking-widest text-slate-400 group-hover:text-white transition-colors">{currentUser.name?.split(' ')[0]}</span>
+                </Link>
+              </div>
+            ) : (
+              <>
+                <button onClick={() => setIsAuthModalOpen(true)} className="text-sm font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-colors">log in</button>
+                <button onClick={() => setIsAuthModalOpen(true)} className="px-6 py-2 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-500 transition-all shadow-lg shadow-blue-600/20">signup</button>
+              </>
+            )}
           </div>
         </div>
       </nav>
@@ -442,7 +474,7 @@ const Jobs = () => {
           <div className="flex items-center gap-3 shrink-0">
              {currentUser && appliedJobs.size > 0 && (
                 <div className="hidden sm:flex items-center gap-2 px-4 py-2 bg-green-500/10 border border-green-500/20 text-green-500 flex-label italic rounded-xl cursor-default">
-                  <CheckCircle size={13} /> {appliedJobs.size} Active Applications
+                  <CheckCircle size={13} /> {appliedJobs.size} Active {appliedJobs.size === 1 ? 'Application' : 'Applications'}
                 </div>
              )}
              <button
@@ -504,6 +536,31 @@ const Jobs = () => {
                     >
                       <span className="flex-meta uppercase">{cat.name}</span>
                       <span className="text-base">{cat.icon}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <label className="flex-meta uppercase text-slate-500 font-black mb-6 block border-b border-slate-800 pb-2">Working Arrangement</label>
+                <div className="space-y-2">
+                  {[
+                    { id: "on-site", name: "On-site" },
+                    { id: "remote", name: "Remote" },
+                    { id: "hybrid", name: "Hybrid" },
+                    { id: "freelance", name: "Freelance" }
+                  ].map((type) => (
+                    <button
+                      key={type.id}
+                      onClick={() => setJobTypeFilter(prev => prev === type.id ? "" : type.id)}
+                      className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border transition-all ${
+                        jobTypeFilter === type.id
+                          ? "bg-blue-600/10 border-blue-600/30 text-blue-500"
+                          : "bg-slate-950 border-slate-800 text-slate-500 hover:border-slate-700 hover:text-white"
+                      }`}
+                    >
+                      <span className="flex-meta uppercase">{type.name}</span>
+                      {jobTypeFilter === type.id && <Check size={14} />}
                     </button>
                   ))}
                 </div>
@@ -599,57 +656,28 @@ const Jobs = () => {
         )}
       </AnimatePresence>
 
-      {/* Mobile filter bottom sheet (Portal or Absolute) */}
-      <AnimatePresence>
-        {showFilters && (
-          <div className="fixed inset-0 z-[200] lg:hidden">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.15 }}
-              onClick={() => setShowFilters(false)}
-              className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm"
-            />
-            <motion.div
-              initial={{ y: '100%' }}
-              animate={{ y: 0 }}
-              exit={{ y: '100%' }}
-              className="absolute bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-800 rounded-t-[40px] p-8 shadow-2xl"
-            >
-              <div className="w-12 h-1 bg-slate-800 rounded-full mx-auto mb-8" />
-              <div className="flex justify-between items-center mb-8">
-                <h3 className="flex-label text-white uppercase">Advanced Filters</h3>
-                <button onClick={() => { setSearchQuery(''); setLocationFilter(''); setCategoryFilter('all'); setSavedOnly(false); }} className="text-blue-500 flex-meta uppercase underline underline-offset-4">Reset</button>
-              </div>
-
-              <div className="space-y-6 mb-10">
-                 <input
-                   type="text"
-                   placeholder="Search role..."
-                   value={searchQuery}
-                   onChange={(e) => setSearchQuery(e.target.value)}
-                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-5 py-4 flex-label text-white"
-                 />
-                 <input
-                   type="text"
-                   placeholder="Location..."
-                   value={locationFilter}
-                   onChange={(e) => setLocationFilter(e.target.value)}
-                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-5 py-4 flex-label text-white"
-                 />
-              </div>
-
-              <button
-                onClick={() => setShowFilters(false)}
-                className="w-full flex-button-primary py-5 justify-center"
-              >
-                Show Results
-              </button>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      <FilterSheet 
+        isOpen={showFilters}
+        onClose={() => setShowFilters(false)}
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        locationFilter={locationFilter}
+        setLocationFilter={setLocationFilter}
+        categoryFilter={categoryFilter}
+        setCategoryFilter={setCategoryFilter}
+        jobTypeFilter={jobTypeFilter}
+        setJobTypeFilter={setJobTypeFilter}
+        categories={categories}
+        resultCount={filteredJobs.length}
+        onClear={() => {
+          setSearchQuery("");
+          setLocationFilter("");
+          setCategoryFilter("all");
+          setJobTypeFilter("");
+          setSavedOnly(false);
+          toast("Filters Cleared", { icon: "🧹" });
+        }}
+      />
 
       <AuthModal 
         isOpen={isAuthModalOpen} 

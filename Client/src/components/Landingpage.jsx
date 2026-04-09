@@ -17,19 +17,17 @@ import {
 } from 'lucide-react';
 import logo from '../assets/logooo.png';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import SlideButton from './SlideButton';
 import AuthModal from './AuthModal';
+import NotificationDropdown from './NotificationDropdown';
+import { User } from 'lucide-react';
 
 const Flexora = () => {
+  const { user: currentUser, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [currentUser, setCurrentUser] = useState(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authInitialMode, setAuthInitialMode] = useState("login");
-
-  useEffect(() => {
-    const userData = JSON.parse(localStorage.getItem('user'));
-    setCurrentUser(userData);
-  }, []);
 
   const features = [
     {
@@ -91,10 +89,7 @@ const Flexora = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('user');
-    localStorage.removeItem('token');
-    setCurrentUser(null);
-    window.location.reload(); // Hard reload to clear all states
+    logout();
   };
 
   return (
@@ -102,8 +97,8 @@ const Flexora = () => {
       {/* Navigation */}
       <header className="fixed top-0 w-full z-50 bg-slate-950/80 border-b border-slate-900 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center">
-          <Link to="/" className="flex items-center gap-2">
-            <img src={logo} alt="Flexora" className="h-18 w-auto" />
+          <Link to="/" className="flex items-center gap-3">
+            <img src={logo} alt="Flexora" className="h-16 w-auto" />
           </Link>
 
           <nav className="hidden md:flex items-center gap-8">
@@ -116,15 +111,43 @@ const Flexora = () => {
             <Link to="/about" className="text-sm font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-colors">
               about
             </Link>
-            <Link to="/jobs" className="text-sm font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-colors">
-              jobs
-            </Link>
-            <button onClick={() => openAuth("login")} className="text-sm font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-colors">
-              log in
-            </button>
-            <SlideButton onClick={() => openAuth("signup")} className="px-6 py-2 !text-[10px] uppercase">
-              signup
-            </SlideButton>
+            {(!currentUser || currentUser.role === 'job_seeker') && (
+              <Link to="/jobs" className="text-sm font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-colors">
+                jobs
+              </Link>
+            )}
+            {currentUser?.role === 'job_provider' && (
+              <Link to="/my-jobs" className="text-sm font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-colors">
+                dashboard
+              </Link>
+            )}
+            {currentUser?.role === 'admin' && (
+              <Link to="/flexora-admin" className="text-sm font-bold uppercase tracking-widest text-blue-500 hover:text-blue-400 transition-colors">
+                admin hub
+              </Link>
+            )}
+
+            {currentUser ? (
+              <div className="flex items-center gap-6 pl-4 border-l border-slate-900">
+                <NotificationDropdown />
+                <Link to="/userprofile" className="flex items-center gap-2 group">
+                  <div className="w-8 h-8 rounded-xl bg-blue-600/10 border border-blue-600/20 flex items-center justify-center text-blue-500 group-hover:bg-blue-600 group-hover:text-white transition-all">
+                    <User size={14} />
+                  </div>
+                  <span className="text-sm font-bold uppercase tracking-widest text-slate-400 group-hover:text-white transition-colors">{currentUser.name?.split(' ')[0]}</span>
+                </Link>
+                <button onClick={handleLogout} className="text-sm font-bold uppercase tracking-widest text-slate-700 hover:text-red-500 transition-colors">Logout</button>
+              </div>
+            ) : (
+              <>
+                <button onClick={() => openAuth("login")} className="text-sm font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-colors">
+                  log in
+                </button>
+                <SlideButton onClick={() => openAuth("signup")} className="px-6 py-2 !text-[10px] uppercase">
+                  signup
+                </SlideButton>
+              </>
+            )}
           </nav>
 
           <button className="md:hidden p-2 text-slate-400 hover:text-white touch-target" onClick={() => setIsMenuOpen(!isMenuOpen)}>
@@ -145,7 +168,15 @@ const Flexora = () => {
               <Link to="/" className="block text-xs font-bold uppercase tracking-widest text-white" onClick={() => setIsMenuOpen(false)}>home</Link>
               <button onClick={() => scrollToSection('how-it-works')} className="block text-xs font-bold uppercase tracking-widest text-white w-full text-left">how it works</button>
               <Link to="/about" className="block text-xs font-bold uppercase tracking-widest text-white" onClick={() => setIsMenuOpen(false)}>about</Link>
-              <Link to="/jobs" className="block text-xs font-bold uppercase tracking-widest text-white" onClick={() => setIsMenuOpen(false)}>jobs</Link>
+              {(!currentUser || currentUser.role === 'job_seeker') && (
+                <Link to="/jobs" className="block text-xs font-bold uppercase tracking-widest text-white" onClick={() => setIsMenuOpen(false)}>jobs</Link>
+              )}
+              {currentUser?.role === 'job_provider' && (
+                <Link to="/my-jobs" className="block text-xs font-bold uppercase tracking-widest text-white" onClick={() => setIsMenuOpen(false)}>dashboard</Link>
+              )}
+              {currentUser?.role === 'admin' && (
+                <Link to="/flexora-admin" className="block text-xs font-bold uppercase tracking-widest text-blue-400" onClick={() => setIsMenuOpen(false)}>admin hub</Link>
+              )}
               <div className="pt-4 border-t border-slate-800 flex flex-col gap-3">
                 <button onClick={() => { openAuth("login"); setIsMenuOpen(false); }} className="text-center py-3 text-xs font-bold uppercase tracking-widest text-slate-400">log in</button>
                 <button onClick={() => { openAuth("signup"); setIsMenuOpen(false); }} className="bg-blue-600 text-white py-4 rounded-xl text-center text-xs font-bold uppercase tracking-widest shadow-lg shadow-blue-600/20">signup</button>
@@ -160,10 +191,10 @@ const Flexora = () => {
         <section className="relative pt-40 sm:pt-52 pb-28 sm:pb-36 border-b border-slate-900 overflow-hidden">
           {/* Realism: Cinematic Hero Asset */}
           <div className="absolute inset-0 z-0 opacity-20">
-            <img 
-              src="/c:/Users/Hp/OneDrive/Desktop/PROJECTS/Vibe%20coding/Flexora/Client/src/assets/hero_bg.png" 
-              className="w-full h-full object-cover grayscale" 
-              alt="Background" 
+            <img
+              src="/c:/Users/Hp/OneDrive/Desktop/PROJECTS/Vibe%20coding/Flexora/Client/src/assets/hero_bg.png"
+              className="w-full h-full object-cover grayscale"
+              alt="Background"
             />
             <div className="absolute inset-0 bg-gradient-to-b from-slate-950/20 via-slate-950/80 to-slate-950" />
           </div>
@@ -177,7 +208,7 @@ const Flexora = () => {
 
               <h1 className="text-5xl sm:text-7xl md:text-8xl font-bold text-white mb-8 tracking-tight leading-[1.05]">
                 Work today.{' '}
-                <span className="text-slate-500 italic font-medium">Paid tomorrow.</span>
+                <span className="text-slate-500 italic font-medium">GetPaid tomorrow.</span>
               </h1>
 
               <p className="text-base sm:text-lg text-slate-400 mb-12 max-w-xl mx-auto leading-relaxed">
@@ -186,13 +217,13 @@ const Flexora = () => {
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-                 <SlideButton 
-                   onClick={() => !currentUser ? openAuth("signup") : null}
-                   to={currentUser ? "/post-job" : undefined} 
-                   className="w-full sm:w-auto !py-4 !px-10 !text-base shadow-xl shadow-blue-600/25"
-                 >
-                    Post a Job
-                 </SlideButton>
+                <SlideButton
+                  onClick={() => !currentUser ? openAuth("signup") : null}
+                  to={currentUser ? "/post-job" : undefined}
+                  className="w-full sm:w-auto !py-4 !px-10 !text-base shadow-xl shadow-blue-600/25"
+                >
+                  Post a Job
+                </SlideButton>
                 <SlideButton to="/jobs" variant="secondary" className="w-full sm:w-auto !py-4 !px-10 !text-base">
                   Browse Jobs
                 </SlideButton>
@@ -277,8 +308,8 @@ const Flexora = () => {
                     key={role}
                     onClick={() => setActiveRole(role)}
                     className={`px-6 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${activeRole === role
-                        ? 'bg-blue-600 text-white shadow-lg'
-                        : 'text-slate-500 hover:text-white'
+                      ? 'bg-blue-600 text-white shadow-lg'
+                      : 'text-slate-500 hover:text-white'
                       }`}
                   >
                     {role === 'seekers' ? 'Job Seekers' : 'Employers'}
@@ -352,8 +383,7 @@ const Flexora = () => {
                 </div>
                 <div className="mt-10">
                   <SlideButton
-                    onClick={() => !currentUser ? openAuth("signup") : null}
-                    to={currentUser ? "/post-job" : undefined}
+                    to="/flexoraauth"
                     className="w-full !py-4 shadow-lg shadow-blue-600/20"
                   >
                     Start Hiring Today
@@ -374,23 +404,23 @@ const Flexora = () => {
             <p className="text-slate-500 text-base mb-10 leading-relaxed">
               No hidden fees. No long onboarding. Just useful tools to connect the right people.
             </p>
-             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <SlideButton 
-                  onClick={() => !currentUser ? openAuth("signup") : null}
-                  to={currentUser ? "/flexoraauth" : undefined} 
-                  className="w-full sm:w-auto !py-4 !px-10 shadow-xl shadow-blue-600/20"
-                >
-                  Create Account
-                </SlideButton>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <SlideButton
+                onClick={() => !currentUser ? openAuth("signup") : null}
+                to={currentUser ? "/flexoraauth" : undefined}
+                className="w-full sm:w-auto !py-4 !px-10 shadow-xl shadow-blue-600/20"
+              >
+                Create Account
+              </SlideButton>
               <SlideButton to="/jobs" variant="secondary" className="w-full sm:w-auto !py-4 !px-10">
                 Browse Jobs
               </SlideButton>
             </div>
 
-            <AuthModal 
-              isOpen={isAuthModalOpen} 
-              onClose={() => setIsAuthModalOpen(false)} 
-              initialMode={authInitialMode} 
+            <AuthModal
+              isOpen={isAuthModalOpen}
+              onClose={() => setIsAuthModalOpen(false)}
+              initialMode={authInitialMode}
             />
           </div>
         </section>

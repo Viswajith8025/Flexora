@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useAuth } from "../context/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X,
@@ -10,11 +11,13 @@ import {
   Loader2,
   Eye,
   EyeOff,
-  Sparkles
+  Sparkles,
+  AlertCircle
 } from "lucide-react";
 import api from "../services/api";
 
 const AuthModal = ({ isOpen, onClose, initialMode = "login" }) => {
+  const { login } = useAuth();
   const [isLogin, setIsLogin] = useState(initialMode === "login");
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -56,13 +59,8 @@ const AuthModal = ({ isOpen, onClose, initialMode = "login" }) => {
         });
       }
 
-      localStorage.setItem('token', response.data.token);
-      localStorage.setItem('user', JSON.stringify({
-        ...response.data.user,
-        role: response.data.user.role === 'provider' ? 'job_provider' : 'job_seeker'
-      }));
-
-      window.location.reload(); // Refresh to update current user state across the app
+      login(response.data.token, response.data.user);
+      onClose();
     } catch (err) {
       console.error('Auth error:', err);
       setError(err.response?.data?.msg || 'Authentication failed. Please try again.');
@@ -121,10 +119,22 @@ const AuthModal = ({ isOpen, onClose, initialMode = "login" }) => {
               initial={{ opacity: 0, y: -4 }}
               animate={{ opacity: 1, y: 0 }}
               className="mb-8 p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-500 text-[10px] font-bold uppercase tracking-widest text-center italic"
-            >
-              {error}
-            </motion.div>
-          )}
+             >
+               {error}
+             </motion.div>
+           )}
+
+          {/* Identity Persistence Warning */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="mb-8 p-4 bg-amber-500/5 border border-amber-500/10 rounded-2xl flex items-start gap-3"
+          >
+            <AlertCircle size={16} className="text-amber-500 mt-0.5 shrink-0" />
+            <p className="text-[9px] font-bold uppercase tracking-widest text-amber-500/80 leading-relaxed italic">
+              Careful: Full Name and Email cannot be changed later. Password is also permanent in this version.
+            </p>
+          </motion.div>
 
           <form onSubmit={handleSubmit} className="space-y-8">
             <AnimatePresence mode="wait">

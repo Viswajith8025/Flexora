@@ -1,12 +1,13 @@
 import LandingPage from './components/Landingpage';
+import Userhome from './components/Userhome';
+import { useAuth } from './context/AuthContext';
+import { Navigate } from 'react-router-dom';
 
-/**
- * App Component - Root Interface Node
- * Renders the tactical LandingPage within the 
- * primary routing architecture defined in main.jsx.
- */
 function App() {
-  return <LandingPage />;
+  const { user } = useAuth();
+  if (!user) return <LandingPage />;
+  if (user.role === 'admin') return <Navigate to="/flexora-admin" replace />;
+  return <Userhome />;
 }
 
 export default App;

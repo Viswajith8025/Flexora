@@ -58,7 +58,19 @@ const jobSchema = new mongoose.Schema({
       createdAt: { type: Date, default: Date.now },
     },
   ],
+  jobType: { 
+    type: String, 
+    enum: ["on-site", "remote", "hybrid", "freelance"], 
+    default: "on-site" 
+  },
+  paymentStatus: { 
+    type: String, 
+    enum: ["pending", "paid", "failed"], 
+    default: "pending" 
+  },
+  razorpayOrderId: String,
   isFlagged: { type: Boolean, default: false },
+  isApproved: { type: Boolean, default: false },
 });
 
 // Prevent OverwriteModelError in dev/hot-reload:

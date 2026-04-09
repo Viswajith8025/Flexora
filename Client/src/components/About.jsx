@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { motion } from 'framer-motion';
 import {
   Users,
@@ -11,9 +12,11 @@ import {
   CheckCircle,
   Clock,
   Building2,
-  ChevronLeft
+  ChevronLeft,
+  User
 } from 'lucide-react';
 import logo from '../assets/logooo.png';
+import NotificationDropdown from './NotificationDropdown';
 
 // Team Assets
 import jithu from '../assets/jithu.jpg';
@@ -22,12 +25,7 @@ import hari from '../assets/hari.jpg';
 import shock from '../assets/shock.jpg';
 
 const About = () => {
-  const [currentUser, setCurrentUser] = useState(null);
-
-  useEffect(() => {
-    const userData = JSON.parse(localStorage.getItem('user'));
-    setCurrentUser(userData);
-  }, []);
+  const { user: currentUser } = useAuth();
 
   const team = [
     {
@@ -79,11 +77,25 @@ const About = () => {
         </Link>
         <div className="hidden md:flex items-center gap-8">
           <Link to="/" className="text-sm font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-colors">home</Link>
-          <Link to="/#how-it-works" className="text-sm font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-colors">how it works</Link>
-          <Link to="/about" className="text-sm font-bold uppercase tracking-widest text-white transition-colors">about</Link>
+          <Link to="/about" className="text-sm font-bold uppercase tracking-widest text-white transition-colors underline underline-offset-8 decoration-blue-500 decoration-2">about</Link>
           <Link to="/jobs" className="text-sm font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-colors">jobs</Link>
-          <Link to="/flexoraauth" className="text-sm font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-colors">log in</Link>
-          <Link to="/flexoraauth" className="text-sm font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-colors">signup</Link>
+          
+          {currentUser ? (
+            <div className="flex items-center gap-6 pl-4 border-l border-slate-900">
+               <NotificationDropdown />
+               <Link to="/userprofile" className="flex items-center gap-2 group">
+                  <div className="w-8 h-8 rounded-full bg-blue-600/10 border border-blue-600/20 flex items-center justify-center text-blue-500 group-hover:bg-blue-600 group-hover:text-white transition-all">
+                  <User size={14} />
+                  </div>
+                  <span className="text-sm font-bold uppercase tracking-widest text-slate-400 group-hover:text-white transition-colors">{currentUser.name?.split(' ')[0]}</span>
+               </Link>
+            </div>
+          ) : (
+            <>
+              <Link to="/flexoraauth" className="text-sm font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-colors">log in</Link>
+              <Link to="/flexoraauth" className="px-6 py-2 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-500 transition-all shadow-lg shadow-blue-600/20">signup</Link>
+            </>
+          )}
         </div>
       </nav>
 

@@ -42,3 +42,29 @@ export const flagJob = async (req, res) => {
     res.status(500).json({ msg: "Error flagging job", error: err.message });
   }
 };
+
+export const getPendingJobs = async (req, res) => {
+  try {
+    const jobs = await Job.find({ isApproved: false })
+      .populate("provider", "name email")
+      .sort({ createdAt: -1 });
+    res.json(jobs);
+  } catch (err) {
+    res.status(500).json({ msg: "Error fetching pending jobs", error: err.message });
+  }
+};
+
+export const approveJob = async (req, res) => {
+  try {
+    const job = await Job.findByIdAndUpdate(
+      req.params.id,
+      { isApproved: true },
+      { new: true }
+    );
+    if (!job) return res.status(404).json({ msg: "Job not found" });
+    
+    res.json({ msg: "Job approved successfully", job });
+  } catch (err) {
+    res.status(500).json({ msg: "Error approving job", error: err.message });
+  }
+};

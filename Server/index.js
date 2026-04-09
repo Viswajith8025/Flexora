@@ -7,6 +7,10 @@ import jobRoutes from "./routes/job.js";
 import http from "http";
 import { Server } from "socket.io";
 import chatRoutes from "./routes/chats.js";
+import applicationRoutes from "./routes/application.js";
+import paymentRoutes from "./routes/payment.js";
+import notificationRoutes from "./routes/notificationRoutes.js";
+import adminRoutes from "./routes/admin.js";
 
 
 import path from "path";
@@ -35,11 +39,16 @@ app.use(cors({
   credentials: true
 }));
 app.use(express.json());
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/jobs", jobRoutes);
 app.use("/api/chat", chatRoutes);
+app.use("/api/applications", applicationRoutes);
+app.use("/api/payment", paymentRoutes);
+app.use("/api/notifications", notificationRoutes);
+app.use("/api/admin", adminRoutes);
 
 // Root route
 app.get("/", (req, res) => {
@@ -90,6 +99,16 @@ mongoose.connection.on('error', (err) => {
 });
 mongoose.connection.on('disconnected', () => {
   console.log('Mongoose disconnected');
+});
+
+// Global Error Handler
+app.use((err, req, res, next) => {
+  console.error("💥 GLOBAL ERROR:", err.stack);
+  res.status(err.status || 500).json({
+    msg: "Internal Server Error",
+    error: err.message,
+    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+  });
 });
 
 // Start Server (use `server` instead of `app`)

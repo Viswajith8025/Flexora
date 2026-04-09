@@ -15,12 +15,27 @@ import {
   AlertCircle,
   Eye,
   Settings,
-  MoreVertical
+  MoreVertical,
+  CheckCircle,
+  CreditCard,
+  Zap
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAuth } from "../../context/AuthContext";
 import logo from "../../assets/logooo.png";
 
+const loadRazorpayScript = () => {
+  return new Promise((resolve) => {
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+};
+
 const MyJobs = () => {
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [jobs, setJobs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -41,6 +56,61 @@ const MyJobs = () => {
       toast.error("Failed to load your listings");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handlePayment = async (jobId) => {
+    try {
+      const res = await loadRazorpayScript();
+      if (!res) {
+        toast.error("Razorpay SDK failed to load. Check your internet connection.");
+        return;
+      }
+
+      // 1. Create Order on Backend
+      const { data: order } = await api.createPaymentOrder(jobId);
+
+      // 2. Open Razorpay Modal
+      const options = {
+        key: order.key_id, 
+        amount: order.amount,
+        currency: order.currency,
+        name: "Flexora Premium",
+        description: "Job Promotion Fee",
+        image: logo,
+        order_id: order.id,
+        handler: async function (response) {
+          // 3. Verify Payment on Backend
+          try {
+            const verifyRes = await api.verifyPayment({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+            });
+
+            if (verifyRes.data.success) {
+              toast.success("Payment Successful! Listing Promoted.");
+              fetchMyJobs(); // Refresh to show 'Paid' status
+            }
+          } catch (err) {
+            toast.error("Payment verification failed. Contact support.");
+          }
+        },
+        prefill: {
+          name: user?.name || "",
+          email: user?.email || "",
+        },
+        theme: {
+          color: "#2563eb",
+        },
+      };
+
+      const paymentObject = new window.Razorpay(options);
+      paymentObject.open();
+
+    } catch (error) {
+      console.error("Payment Error:", error);
+      toast.error(error.response?.data?.msg || "Payment failed to initialize");
     }
   };
 
@@ -200,13 +270,27 @@ const MyJobs = () => {
                     </div>
                   </div>
 
-                  <div className={`flex items-center gap-3 ${viewMode === 'list' ? '' : 'mt-auto'}`}>
+                  <div className={`flex flex-col sm:flex-row items-center gap-3 ${viewMode === 'list' ? '' : 'mt-auto'}`}>
+                    {job.paymentStatus === 'paid' ? (
+                      <div className="flex-1 flex items-center justify-center gap-2 bg-slate-900 border border-slate-800 text-green-500 py-3.5 px-6 rounded-xl text-[10px] font-black uppercase tracking-widest cursor-default">
+                        <CheckCircle size={14} /> Premium Listing
+                      </div>
+                    ) : (
+                      <button 
+                        onClick={() => handlePayment(job._id)}
+                        className="flex-1 flex items-center justify-center gap-2 bg-amber-600 text-white py-3.5 px-6 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-amber-500 transition-all shadow-lg shadow-amber-600/10"
+                      >
+                        <Zap size={14} className="fill-white" /> Pay to Promote
+                      </button>
+                    )}
+                    
                     <button 
                       onClick={() => navigate(`/jobs/${job._id}/applicants`)}
-                      className="flex-1 flex items-center justify-center gap-2 bg-blue-600 text-white py-3.5 px-6 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-500 transition-all"
+                      className="flex-1 flex items-center justify-center gap-2 bg-blue-600 text-white py-3.5 px-6 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-500 transition-all shadow-lg shadow-blue-600/10"
                     >
                       View Applicants <ChevronRight size={14} />
                     </button>
+                    
                     <button className="p-3.5 bg-slate-900 border border-slate-800 text-slate-500 rounded-xl hover:text-white hover:border-slate-700 transition-all">
                       <MoreVertical size={16} />
                     </button>

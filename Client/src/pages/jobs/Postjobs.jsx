@@ -24,6 +24,9 @@ import logo from "../../assets/logooo.png";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
 import api from "../../services/api";
+import { useAuth } from "../../context/AuthContext";
+import NotificationDropdown from "../../components/NotificationDropdown";
+import { LogOut } from "lucide-react";
 
 // ─── Reusable Field Components ────────────────────────────────────────────────
 
@@ -129,7 +132,7 @@ const JobPreview = ({ formData }) => {
               </h4>
               <div className="flex gap-2">
                  <span className="px-3 py-1 bg-blue-600/10 border border-blue-600/20 rounded-lg text-blue-500 flex-label lowercase italic">
-                   {formData.jobType || "Uncategorized"}
+                   {jobTypes.find(t => t.value === formData.jobType)?.label || "Uncategorized"}
                  </span>
               </div>
            </div>
@@ -164,7 +167,7 @@ const JobPreview = ({ formData }) => {
 
 const PostJob = () => {
   const [step, setStep] = useState(1);
-  const [currentUser, setCurrentUser] = useState(null);
+  const { user: currentUser, logout } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
 
@@ -184,15 +187,20 @@ const PostJob = () => {
   });
 
   const jobTypes = [
-    "General Assistance", "Event Logistics", "Digital Content", "Delivery Lead",
-    "Maintenance Support", "Educational Tutoring", "Retail Support", "Catering Lead",
-    "Hospitality Service", "Technical Support", "Construction Lead", "Electrical Setup",
-    "Creative Design", "Administrative Aide",
+    { value: "general", label: "General Assistance" },
+    { value: "events", label: "Event Logistics" },
+    { value: "digital", label: "Digital Content" },
+    { value: "delivery", label: "Delivery Lead" },
+    { value: "retail", label: "Retail Support" },
+    { value: "hospitality", label: "Hospitality Service" },
+    { value: "logistics", label: "Logistics Operations" },
+    { value: "security", label: "Security & Safety" },
+    { value: "technical", label: "Technical Support" },
+    { value: "creative", label: "Creative Design" }
   ];
 
   useEffect(() => {
-    const stored = localStorage.getItem("user");
-    if (stored) setCurrentUser(JSON.parse(stored));
+    // Sync local form state if needed, but currentUser is handled by hook
   }, []);
 
   const handleChange = (e) => {
@@ -224,6 +232,12 @@ const PostJob = () => {
       estimatedHours: "", contactEmail: "", contactPhone: "",
     });
     setStep(1);
+    toast.success("Ready for your next listing");
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate("/");
   };
 
   // Auth gate
@@ -258,18 +272,37 @@ const PostJob = () => {
     <div className="min-h-screen bg-slate-950 text-slate-200">
       {/* SaaS Header */}
       <nav className="fixed top-0 w-full z-[100] px-6 h-20 flex justify-between items-center bg-slate-950/80 border-b border-slate-900 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto w-full flex justify-between items-center">
-          <Link to="/" className="flex items-center gap-2">
-            <img src={logo} alt="Flexora" className="h-18 w-auto" />
+        <div className="flex items-center gap-8">
+          <Link to="/" className="flex items-center gap-3">
+            <img src={logo} alt="Flexora" className="h-16 w-auto" />
           </Link>
+          <div className="hidden md:flex items-center gap-6">
+            <Link to="/" className="text-slate-500 font-bold text-[10px] uppercase tracking-widest hover:text-white transition-colors">Home</Link>
+            <span className="text-white font-bold text-[10px] uppercase tracking-widest border-b-2 border-blue-600 pb-1 cursor-default">Post Job</span>
+            <Link to="/about" className="text-slate-500 font-bold text-[10px] uppercase tracking-widest hover:text-white transition-colors">About</Link>
+            <Link to="/jobs" className="text-slate-500 font-bold text-[10px] uppercase tracking-widest hover:text-white transition-colors">Browse Jobs</Link>
+          </div>
+        </div>
 
-          <div className="hidden md:flex items-center gap-8">
-            <Link to="/" className="text-sm font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-colors">home</Link>
-            <Link to="/#how-it-works" className="text-sm font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-colors">how it works</Link>
-            <Link to="/about" className="text-sm font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-colors">about</Link>
-            <Link to="/jobs" className="text-sm font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-colors">jobs</Link>
-            <Link to="/flexoraauth" className="text-sm font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-colors">log in</Link>
-            <Link to="/flexoraauth" className="text-sm font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-colors">signup</Link>
+        <div className="flex items-center gap-6">
+          <NotificationDropdown />
+          
+          <div className="flex items-center gap-3 pl-6 border-l border-slate-900">
+             <div className="text-right hidden sm:block">
+                <div className="flex-label text-white mb-1">{currentUser?.name || "Member"}</div>
+                <div className="flex-meta capitalize text-blue-500 font-bold">
+                   {currentUser?.role?.replace('_', ' ') || 'User'}
+                </div>
+             </div>
+             <div className="group relative">
+                <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white font-bold cursor-pointer">
+                   {currentUser?.name?.[0] || 'U'}
+                </div>
+                <div className="absolute right-0 top-12 w-48 bg-slate-900 border border-slate-800 rounded-2xl p-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all shadow-2xl z-[110]">
+                   <Link to="/userprofile" className="flex items-center gap-3 px-4 py-2 hover:bg-slate-800 rounded-xl flex-label transition-colors mb-1"><Users size={14} /> Profile Settings</Link>
+                   <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-2 hover:bg-red-500/10 text-red-500 rounded-xl flex-label transition-colors"><LogOut size={14} /> Logout Session</button>
+                </div>
+             </div>
           </div>
         </div>
       </nav>
@@ -336,7 +369,7 @@ const PostJob = () => {
                       <SelectInput name="jobType" value={formData.jobType} onChange={handleChange}>
                         <option value="" disabled>Select a category...</option>
                         {jobTypes.map((t) => (
-                          <option key={t} value={t}>{t}</option>
+                          <option key={t.value} value={t.value}>{t.label}</option>
                         ))}
                       </SelectInput>
                     </div>
@@ -549,7 +582,7 @@ const PostJob = () => {
                       {formData.jobType && (
                         <div className="mt-4 flex gap-2">
                            <span className="px-3 py-1 bg-blue-600/10 border border-blue-600/20 rounded-lg text-blue-500 flex-label lowercase italic">
-                             {formData.jobType}
+                             {jobTypes.find(t => t.value === formData.jobType)?.label || "—"}
                            </span>
                         </div>
                       )}

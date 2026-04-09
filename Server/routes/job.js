@@ -1,6 +1,6 @@
 // backend/routes/job.js
 import express from "express";
-import { createJob, getJobs, reportJob, applyToJob, getMyApplications, toggleSaveJob, getSavedJobs, getProviderJobs, updateApplicationStatus } from "../controllers/jobcontroller.js";
+import { createJob, getJobs, reportJob, applyToJob, getMyApplications, toggleSaveJob, getSavedJobs, getProviderJobs, updateApplicationStatus, getJobApplicants } from "../controllers/jobcontroller.js";
 import { authenticate } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
@@ -11,7 +11,9 @@ router.get("/saved", authenticate, getSavedJobs);
 router.post("/save/:id", authenticate, toggleSaveJob);
 router.get("/my-jobs", authenticate, getProviderJobs);
 router.get("/provider/jobs", authenticate, getProviderJobs);
-router.put("/application/status", authenticate, updateApplicationStatus);
+router.get("/:id/applicants", authenticate, getJobApplicants);
+router.patch("/:jobId/applicants/:userId/status", authenticate, updateApplicationStatus);
+router.put("/application/status", authenticate, updateApplicationStatus); // Keep for legacy compat
 router.get("/ping", (req, res) => res.json({ msg: "Tactical Job Route Operational" }));
 router.get("/", getJobs);
 router.post("/report/:id", authenticate, reportJob);
