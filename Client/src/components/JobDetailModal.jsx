@@ -15,6 +15,7 @@ import {
   ArrowRight,
   Heart
 } from 'lucide-react';
+import { BACKEND_URL } from '../services/api';
 import SlideButton from './SlideButton';
 
 const JobDetailModal = ({ 
@@ -179,8 +180,16 @@ const JobDetailModal = ({
                            <CheckCircle size={14} className="text-blue-500" /> Verified Employer
                         </h3>
                         <div className="flex items-center gap-4 mb-8">
-                           <div className="w-12 h-12 rounded-xl bg-blue-600 flex items-center justify-center text-white font-black text-xl">
-                              {job.provider?.name?.[0] || 'P'}
+                           <div className="w-12 h-12 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-white font-black text-xl overflow-hidden">
+                              {job.provider?.avatar ? (
+                                <img 
+                                  src={job.provider.avatar.startsWith('/uploads') ? `${BACKEND_URL}${job.provider.avatar}` : job.provider.avatar} 
+                                  alt="" 
+                                  className="w-full h-full object-cover" 
+                                />
+                              ) : (
+                                <span className="text-slate-700">{job.provider?.name?.[0] || 'P'}</span>
+                              )}
                            </div>
                            <div>
                               <p className="text-sm font-black text-white uppercase truncate">{job.provider?.name || 'Authorized Member'}</p>

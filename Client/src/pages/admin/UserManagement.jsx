@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import api from '../../services/api';
+import api, { BACKEND_URL } from '../../services/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Users, Briefcase, Inbox, Trash2, Search, 
@@ -131,8 +131,16 @@ const UserManagement = () => {
                   className="grid grid-cols-[1fr_1fr_120px_80px_80px_60px] gap-4 px-8 py-5 hover:bg-slate-950/50 transition-colors items-center"
                 >
                   <div className="flex items-center gap-3">
-                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-xs font-black ${isSeeker ? 'bg-emerald-500/10 text-emerald-400' : 'bg-violet-500/10 text-violet-400'}`}>
-                      {u.name?.[0]?.toUpperCase() || '?'}
+                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-xs font-black overflow-hidden bg-slate-800 border border-slate-700 ${isSeeker ? 'text-emerald-400' : 'text-violet-400'}`}>
+                      {u.avatar ? (
+                        <img 
+                          src={u.avatar.startsWith('/uploads') ? `${BACKEND_URL}${u.avatar}` : u.avatar} 
+                          alt="" 
+                          className="w-full h-full object-cover" 
+                        />
+                      ) : (
+                        u.name?.[0]?.toUpperCase() || '?'
+                      )}
                     </div>
                     <span className="text-white text-xs font-bold truncate">{u.name}</span>
                   </div>

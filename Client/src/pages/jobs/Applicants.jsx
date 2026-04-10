@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-import api from "../../services/api";
+import api, { BACKEND_URL } from "../../services/api";
 import { 
   Users, 
   ChevronLeft, 
@@ -134,13 +134,17 @@ const Applicants = () => {
                     {/* User Profile Info */}
                     <div className="flex items-center gap-6">
                       <div className="relative">
-                        <div className="w-16 h-16 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center overflow-hidden">
-                           {applicant.user.avatar ? (
-                             <img src={applicant.user.avatar} alt="" className="w-full h-full object-cover" />
-                           ) : (
-                             <span className="text-xl font-black text-slate-700 uppercase">{applicant.user.name?.charAt(0)}</span>
-                           )}
-                        </div>
+                         <div className="w-16 h-16 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center overflow-hidden">
+                            {applicant.user.avatar ? (
+                              <img 
+                                src={applicant.user.avatar.startsWith('/uploads') ? `${BACKEND_URL}${applicant.user.avatar}` : applicant.user.avatar} 
+                                alt="" 
+                                className="w-full h-full object-cover" 
+                              />
+                            ) : (
+                              <span className="text-xl font-black text-slate-700 uppercase">{applicant.user.name?.charAt(0)}</span>
+                            )}
+                         </div>
                         <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-lg bg-slate-950 border border-slate-800 flex items-center justify-center text-amber-500 shadow-xl">
                            <Star size={10} className="fill-amber-500" />
                         </div>

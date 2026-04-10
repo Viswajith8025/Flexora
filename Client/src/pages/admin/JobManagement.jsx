@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import api from '../../services/api';
+import api, { BACKEND_URL } from '../../services/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Briefcase, Search, Trash2, Calendar, MapPin, 
@@ -213,8 +213,16 @@ const JobManagement = () => {
                 <div className="bg-slate-950/60 rounded-3xl p-6 border border-slate-800/50">
                    <p className="text-slate-600 text-[9px] font-black uppercase tracking-widest mb-4">Job Provider Details</p>
                    <div className="flex items-center gap-6">
-                      <div className="w-12 h-12 rounded-2xl bg-blue-600/10 border border-blue-500/20 flex items-center justify-center text-blue-400 font-black text-lg">
-                        {selectedJob.provider?.name?.[0] || 'P'}
+                      <div className="w-12 h-12 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center text-blue-400 font-black text-lg overflow-hidden">
+                        {selectedJob.provider?.avatar ? (
+                          <img 
+                            src={selectedJob.provider.avatar.startsWith('/uploads') ? `${BACKEND_URL}${selectedJob.provider.avatar}` : selectedJob.provider.avatar} 
+                            alt="" 
+                            className="w-full h-full object-cover" 
+                          />
+                        ) : (
+                          selectedJob.provider?.name?.[0] || 'P'
+                        )}
                       </div>
                       <div className="flex-1 min-w-0">
                          <h4 className="text-white font-bold text-sm uppercase tracking-tight">{selectedJob.provider?.name}</h4>

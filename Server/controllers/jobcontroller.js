@@ -12,21 +12,25 @@ export const createJob = async (req, res) => {
       payRate, compensation, payType,
       jobType, category,
       requirements, estimatedHours,
-      contactEmail, contactPhone 
+      contactEmail, contactPhone,
+      endDate 
     } = req.body;
+
+    // Sanitization: Convert empty strings/whitespace to undefined to avoid Mongoose casting errors (Date/Number)
+    const sanitize = (val) => (typeof val === "string" && val.trim() === "" ? undefined : val);
 
     const newJob = new Job({
       title: title || jobTitle,
       description,
       location,
-      date: date || startDate, // Legacy support
-      startDate: startDate || date,
-      endDate: endDate,
-      compensation: compensation || payRate,
+      date: sanitize(date || startDate),
+      startDate: sanitize(startDate || date),
+      endDate: sanitize(endDate),
+      compensation: sanitize(compensation || payRate),
       payType: payType || "hourly",
       category: (category || jobType || "general").toLowerCase(),
       requirements,
-      estimatedHours,
+      estimatedHours: sanitize(estimatedHours),
       contactEmail,
       contactPhone,
       provider: req.user.id,
@@ -36,8 +40,20 @@ export const createJob = async (req, res) => {
     await newJob.save();
     res.status(201).json({ msg: "Job posted successfully", job: newJob });
   } catch (err) {
-    console.error("Create Job Error:", err);
-    res.status(500).json({ msg: "Error posting job", error: err.message });
+    console.error("CRITICAL Create Job Error:", {
+      message: err.message,
+      stack: err.stack,
+      errors: err.errors // Captures Mongoose validation details
+    });
+    
+    const errorDetail = err.name === 'ValidationError' 
+      ? Object.values(err.errors).map(e => e.message).join(", ")
+      : err.message;
+
+    res.status(500).json({ 
+      msg: "Error posting job", 
+      error: errorDetail 
+    });
   }
 };
 
@@ -53,11 +69,11 @@ export const getJobs = async (req, res) => {
       query.category = category;
     }
     
-    if (location && location.trim() !== "") {
+    if (location && typeof location === 'string' && location.trim() !== "") {
       query.location = { $regex: String(location).trim(), $options: 'i' };
     }
     
-    if (search && search.trim() !== "") {
+    if (search && typeof search === 'string' && search.trim() !== "") {
       const searchTerms = String(search).trim();
       query.$or = [
         { title: { $regex: searchTerms, $options: 'i' } },
@@ -215,7 +231,7 @@ export const getProviderJobs = async (req, res) => {
   try {
     // Providers see all their jobs, including pending ones, with populated applicant details
     const jobs = await Job.find({ provider: req.user.id })
-      .populate("applicants.user", "name email phone avatar rating completedJobs")
+      .populate("applicants.user", "name email phone avatar rating completedJobs district skills")
       .sort({ createdAt: -1 });
     res.json(jobs);
   } catch (err) {
@@ -261,7 +277,7 @@ export const updateApplicationStatus = async (req, res) => {
 export const getJobApplicants = async (req, res) => {
   try {
     const job = await Job.findById(req.params.id)
-      .populate("applicants.user", "name email phone avatar rating completedJobs");
+      .populate("applicants.user", "name email phone avatar rating completedJobs district skills");
     
     if (!job) return res.status(404).json({ msg: "Job not found" });
 

@@ -23,7 +23,7 @@ import {
 import logo from "../../assets/logooo.png";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
-import api from "../../services/api";
+import api, { BACKEND_URL } from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
 import NotificationDropdown from "../../components/NotificationDropdown";
 import { LogOut } from "lucide-react";
@@ -281,7 +281,9 @@ const PostJob = () => {
             <Link to="/" className="text-slate-500 font-bold text-[10px] uppercase tracking-widest hover:text-white transition-colors">Home</Link>
             <span className="text-white font-bold text-[10px] uppercase tracking-widest border-b-2 border-blue-600 pb-1 cursor-default">Post Job</span>
             <Link to="/about" className="text-slate-500 font-bold text-[10px] uppercase tracking-widest hover:text-white transition-colors">About</Link>
-            <Link to="/jobs" className="text-slate-500 font-bold text-[10px] uppercase tracking-widest hover:text-white transition-colors">Browse Jobs</Link>
+            {(!currentUser || currentUser.role === 'job_seeker') && (
+              <Link to="/jobs" className="text-slate-500 font-bold text-[10px] uppercase tracking-widest hover:text-white transition-colors">Browse Jobs</Link>
+            )}
           </div>
         </div>
 
@@ -295,10 +297,18 @@ const PostJob = () => {
                    {currentUser?.role?.replace('_', ' ') || 'User'}
                 </div>
              </div>
-             <div className="group relative">
-                <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white font-bold cursor-pointer">
-                   {currentUser?.name?.[0] || 'U'}
-                </div>
+              <div className="group relative">
+                 <div className="w-10 h-10 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-white font-bold cursor-pointer overflow-hidden">
+                    {currentUser?.avatar ? (
+                      <img 
+                        src={currentUser.avatar.startsWith('/uploads') ? `${BACKEND_URL}${currentUser.avatar}` : currentUser.avatar} 
+                        alt="" 
+                        className="w-full h-full object-cover" 
+                      />
+                    ) : (
+                      <span className="text-sm font-black text-slate-700 uppercase">{currentUser?.name?.[0] || 'U'}</span>
+                    )}
+                 </div>
                 <div className="absolute right-0 top-12 w-48 bg-slate-900 border border-slate-800 rounded-2xl p-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all shadow-2xl z-[110]">
                    <Link to="/userprofile" className="flex items-center gap-3 px-4 py-2 hover:bg-slate-800 rounded-xl flex-label transition-colors mb-1"><Users size={14} /> Profile Settings</Link>
                    <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-2 hover:bg-red-500/10 text-red-500 rounded-xl flex-label transition-colors"><LogOut size={14} /> Logout Session</button>

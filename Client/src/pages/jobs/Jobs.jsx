@@ -148,6 +148,13 @@ const Jobs = () => {
   ].filter(Boolean).length;
 
   useEffect(() => {
+    // Role-based protection: Providers and Admins shouldn't be browsing/applying in the seeker market
+    if (currentUser && (currentUser.role === 'job_provider' || currentUser.role === 'admin')) {
+      toast("Marketplace is for Job Seekers only", { icon: "🛡️" });
+      navigate('/');
+      return;
+    }
+
     fetchJobs();
 
     if (currentUser) {
@@ -288,7 +295,9 @@ const Jobs = () => {
           <div className="hidden md:flex items-center gap-8">
             <Link to="/" className="text-sm font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-colors">home</Link>
             <Link to="/about" className="text-sm font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-colors">about</Link>
-            <Link to="/jobs" className="text-sm font-bold uppercase tracking-widest text-white transition-colors underline underline-offset-8 decoration-blue-500 decoration-2">jobs</Link>
+            {(!currentUser || currentUser.role === 'job_seeker') && (
+              <Link to="/jobs" className="text-sm font-bold uppercase tracking-widest text-white transition-colors underline underline-offset-8 decoration-blue-500 decoration-2">jobs</Link>
+            )}
             
             {currentUser ? (
               <div className="flex items-center gap-6 pl-4 border-l border-slate-900">
@@ -496,6 +505,8 @@ const Jobs = () => {
             isApplying={loadingApplyId === (selectedJob.id || selectedJob._id)}
             isSaved={savedJobs.has(selectedJob.id || selectedJob._id)}
             onSave={toggleSaveJob}
+            isProviderView={currentUser?.role === 'job_provider'}
+            isAdminView={currentUser?.role === 'admin'}
           />
         )}
       </AnimatePresence>

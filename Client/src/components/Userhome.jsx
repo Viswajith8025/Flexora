@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import api from "../services/api";
+import api, { BACKEND_URL } from "../services/api";
 import toast from 'react-hot-toast';
 import JobCard from "./Jobcard";
 import JobDetailModal from "./JobDetailModal";
@@ -148,6 +148,8 @@ const FlexoraDashboard = () => {
   const [selectedJobForApplicants, setSelectedJobForApplicants] = useState(null);
   const [selectedJobForDetail, setSelectedJobForDetail] = useState(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [selectedApplicantProfile, setSelectedApplicantProfile] = useState(null);
   
   // Application Handling
   const navigate = useNavigate();
@@ -242,14 +244,33 @@ const FlexoraDashboard = () => {
   };
 
   // Seeker Stats Calculation
-  const seekerStats = useMemo(() => {
-    return {
-      total: myApplications.length,
-      pending: myApplications.filter(a => a.status === 'pending').length,
-      accepted: myApplications.filter(a => a.status === 'accepted').length,
-      rejected: myApplications.filter(a => a.status === 'rejected').length
-    };
-  }, [myApplications]);
+   const seekerStats = useMemo(() => {
+      const total = myApplications.length;
+      const accepted = myApplications.filter(a => a.status === 'accepted').length;
+      const pending = myApplications.filter(a => a.status === 'pending' || a.status === 'in review').length;
+      return { total, accepted, pending };
+   }, [myApplications]);
+
+   const profileStats = useMemo(() => {
+      if (!currentUser) return { rating: 5.0, speed: "Fast", completion: 0 };
+      
+      const criteria = [
+         currentUser.name,
+         currentUser.avatar,
+         currentUser.phone && currentUser.phone !== 'Not provided',
+         currentUser.district && currentUser.district !== 'Not specified',
+         currentUser.skills && currentUser.skills.length > 0,
+         myApplications.length > 0
+      ];
+      const filled = criteria.filter(Boolean).length;
+      const percentage = Math.round((filled / criteria.length) * 100);
+
+      return {
+         rating: currentUser.rating || 5.0,
+         speed: myApplications.length > 3 ? "Instant" : "Fast",
+         completion: percentage
+      };
+   }, [currentUser, myApplications]);
 
   // Provider Stats Calculation
   const providerStats = useMemo(() => {
@@ -261,6 +282,10 @@ const FlexoraDashboard = () => {
   }, [myPostedJobs]);
 
   const handleUpdateApplicantStatus = async (jobId, userId, status) => {
+     if (!userId) {
+        toast.error("Invalid Candidate Identifier");
+        return;
+     }
      try {
         await api.updateApplicationStatus(jobId, userId, status);
         toast.success(`Candidate ${status === 'accepted' ? 'Hired' : 'Declined'}`);
@@ -307,8 +332,16 @@ const FlexoraDashboard = () => {
                 </div>
              </div>
              <div className="group relative">
-                <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white font-bold cursor-pointer">
-                   {currentUser?.name?.[0] || 'U'}
+                <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white font-bold cursor-pointer overflow-hidden border border-slate-800">
+                   {currentUser?.avatar ? (
+                      <img 
+                         src={currentUser.avatar.startsWith('/uploads') ? `${BACKEND_URL}${currentUser.avatar}` : currentUser.avatar} 
+                         className="w-full h-full object-cover" 
+                         alt={currentUser.name}
+                      />
+                   ) : (
+                      currentUser?.name?.[0] || 'U'
+                   )}
                 </div>
                 <div className="absolute right-0 top-12 w-48 bg-slate-900 border border-slate-800 rounded-2xl p-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all shadow-2xl z-[110]">
                    <Link to="/userprofile" className="flex items-center gap-3 px-4 py-2 hover:bg-slate-800 rounded-xl flex-label transition-colors mb-1"><Users size={14} /> Profile Settings</Link>
@@ -578,29 +611,49 @@ const FlexoraDashboard = () => {
 
            {/* Sidebar Intel */}
            <div className="space-y-8">
-              {/* Platform Status */}
-              <div className="flex-card flex-card-padding">
-                 <h3 className="flex-label text-white flex items-center gap-2 mb-8 pb-4 border-b border-slate-800">
-                    <Activity size={14} className="text-blue-500" /> Your Stats
-                 </h3>
-                 <div className="space-y-6">
-                    <div className="flex justify-between items-center flex-meta">
-                       <span className="text-slate-500">Member Rating</span>
-                       <span className="text-amber-500 flex items-center gap-1">4.8 <Star size={10} className="fill-amber-500" /></span>
-                    </div>
-                    <div className="flex justify-between items-center flex-meta">
-                       <span className="text-slate-500">Response Speed</span>
-                       <span className="text-blue-500">~ 24 Hours</span>
-                    </div>
-                    <div className="flex justify-between items-center flex-meta">
-                       <span className="text-slate-500">Profile Completion</span>
-                       <span className="text-white">92%</span>
-                    </div>
-                    <div className="w-full bg-slate-950 h-1.5 rounded-full overflow-hidden">
-                       <div className="bg-blue-600 h-full transition-all duration-1000" style={{ width: '92%' }} />
-                    </div>
-                 </div>
-              </div>
+               {/* Your Real Stats */}
+               <div className="flex-card flex-card-padding">
+                  <h3 className="flex-label text-white flex items-center gap-2 mb-8 pb-4 border-b border-slate-800">
+                     <Activity size={14} className="text-blue-500" /> Your Stats
+                  </h3>
+                  <div className="space-y-6">
+                     <div className="flex justify-between items-center flex-meta">
+                        <span className="text-slate-500">Member Rating</span>
+                        <span className="text-amber-500 flex items-center gap-1">
+                           {profileStats.rating.toFixed(1)} <Star size={10} className="fill-amber-500" />
+                        </span>
+                     </div>
+                     <div className="flex justify-between items-center flex-meta">
+                        <span className="text-slate-500">Response Speed</span>
+                        <span className="text-blue-500">{profileStats.speed}</span>
+                     </div>
+                     <div className="flex justify-between items-center flex-meta">
+                        <span className="text-slate-500">Profile Completion</span>
+                        <span className="text-white">{profileStats.completion}%</span>
+                     </div>
+                     <div className="w-full bg-slate-950 h-1.5 rounded-full overflow-hidden">
+                        <div 
+                           className="bg-blue-600 h-full transition-all duration-1000" 
+                           style={{ width: `${profileStats.completion}%` }} 
+                        />
+                     </div>
+                  </div>
+               </div>
+
+               {/* Discovery CTA: Apply for more jobs */}
+               {currentUser?.role === 'job_seeker' && (
+                  <div className="flex-card flex-card-padding bg-blue-600/5 border-blue-600/20 relative overflow-hidden group">
+                     <div className="absolute -right-4 -top-4 w-24 h-24 bg-blue-600/10 rounded-full blur-2xl group-hover:bg-blue-600/20 transition-all" />
+                     <Zap size={40} className="text-blue-500/20 absolute -right-2 top-8 rotate-12 group-hover:rotate-0 transition-transform" />
+                     
+                     <h3 className="flex-label text-white mb-4 relative z-10">Discover Jobs</h3>
+                     <p className="flex-meta mb-8 leading-relaxed relative z-10">Expand your reach. Apply to more premium listings to increase your hiring chances.</p>
+                     
+                     <SlideButton to="/jobs" className="w-full !py-4 relative z-10">
+                        Explore Marketplace
+                     </SlideButton>
+                  </div>
+               )}
 
               {/* Saved Jobs Summary */}
               <div className="flex-card flex-card-padding">
@@ -640,9 +693,23 @@ const FlexoraDashboard = () => {
                         <div className="space-y-4">
                             {selectedJobForApplicants.applicants.map((applicant, i) => (
                                <div key={applicant.user?._id || i} className="flex-card p-6 sm:p-8 flex flex-col md:flex-row items-center justify-between gap-8 group hover:border-slate-700 transition-colors mb-4 last:mb-0">
-                                  <div className="flex items-center gap-6">
-                                     <div className="w-14 h-14 rounded-xl bg-blue-600 flex items-center justify-center text-white text-xl font-bold shadow-lg shadow-blue-600/10 shrink-0">
-                                        {applicant.user?.name?.[0] || 'A'}
+                                  <div 
+                                     className="flex items-center gap-6 cursor-pointer flex-1"
+                                     onClick={() => {
+                                        setSelectedApplicantProfile(applicant.user);
+                                        setIsProfileModalOpen(true);
+                                     }}
+                                  >
+                                     <div className="w-14 h-14 rounded-xl bg-blue-600 flex items-center justify-center text-white text-xl font-bold shadow-lg shadow-blue-600/10 shrink-0 overflow-hidden border border-slate-800">
+                                        {applicant.user?.avatar ? (
+                                           <img 
+                                              src={applicant.user.avatar.startsWith('/uploads') ? `${BACKEND_URL}${applicant.user.avatar}` : applicant.user.avatar} 
+                                              className="w-full h-full object-cover shrink-0" 
+                                              alt={applicant.user.name}
+                                           />
+                                        ) : (
+                                           applicant.user?.name?.[0] || 'A'
+                                        )}
                                      </div>
                                      <div className="min-w-0">
                                         <h4 className="text-lg font-bold text-white tracking-tight mb-1 leading-tight truncate">{applicant.user?.name || "Candidate"}</h4>
@@ -748,6 +815,68 @@ const FlexoraDashboard = () => {
          isApplying={loadingApplyId === (selectedJobForDetail?._id || selectedJobForDetail?.id)}
          isProviderView={currentUser?.role === 'job_provider'}
       />
+
+      {/* Applicant Profile Popup (Provider View) */}
+      <AnimatePresence>
+         {isProfileModalOpen && selectedApplicantProfile && (
+            <div key="profile-modal-overlay" className="fixed inset-0 z-[300] flex items-center justify-center p-6">
+               <motion.div key="p-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} onClick={() => setIsProfileModalOpen(false)} className="absolute inset-0 bg-slate-950/90 backdrop-blur-sm" />
+               <motion.div key="p-content" initial={{ opacity: 0, scale: 0.97, y: 15 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.97, y: 15 }} transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }} className="relative w-full max-w-lg bg-slate-900 border border-slate-800 rounded-[40px] overflow-hidden shadow-2xl p-10 sm:p-14">
+                  <div className="flex justify-between items-start mb-10">
+                     <div className="w-20 h-20 rounded-2xl bg-blue-600 flex items-center justify-center text-white text-3xl font-bold shadow-2xl shadow-blue-600/20 overflow-hidden">
+                        {selectedApplicantProfile.avatar ? (
+                           <img 
+                              src={selectedApplicantProfile.avatar.startsWith('/uploads') ? `${BACKEND_URL}${selectedApplicantProfile.avatar}` : selectedApplicantProfile.avatar} 
+                              className="w-full h-full object-cover" 
+                              alt={selectedApplicantProfile.name}
+                           />
+                        ) : (
+                           selectedApplicantProfile.name?.[0] || 'A'
+                        )}
+                     </div>
+                     <button onClick={() => setIsProfileModalOpen(false)} className="w-10 h-10 flex items-center justify-center hover:bg-slate-800 rounded-xl text-slate-500 transition-all"><X size={20} /></button>
+                  </div>
+
+                  <h2 className="flex-title-sm mb-2">{selectedApplicantProfile.name}</h2>
+                  <p className="flex-meta text-blue-500 mb-10">{selectedApplicantProfile.email}</p>
+
+                  <div className="grid grid-cols-2 gap-8 mb-12">
+                     <div className="flex-card p-5 bg-slate-950/50 border-slate-900">
+                        <p className="flex-meta uppercase mb-2 text-[10px]">Location</p>
+                        <p className="text-white font-bold text-sm truncate">{selectedApplicantProfile.district || "Not specified"}</p>
+                     </div>
+                     <div className="flex-card p-5 bg-slate-950/50 border-slate-900">
+                        <p className="flex-meta uppercase mb-2 text-[10px]">Contact</p>
+                        <p className="text-white font-bold text-sm truncate">{selectedApplicantProfile.phone || "Not provided"}</p>
+                     </div>
+                     <div className="flex-card p-5 bg-slate-950/50 border-slate-900">
+                        <p className="flex-meta uppercase mb-2 text-[10px]">Rating</p>
+                        <p className="text-white font-bold text-sm flex items-center gap-2">{selectedApplicantProfile.rating || '4.9'} <Star size={12} className="fill-amber-500 text-amber-500" /></p>
+                     </div>
+                     <div className="flex-card p-5 bg-slate-950/50 border-slate-900">
+                        <p className="flex-meta uppercase mb-2 text-[10px]">Experience</p>
+                        <p className="text-white font-bold text-sm">{selectedApplicantProfile.completedJobs || 0} Jobs Done</p>
+                     </div>
+                  </div>
+
+                  <div className="mb-12">
+                     <p className="flex-meta uppercase mb-4 text-[10px]">Expertise & Skills</p>
+                     <div className="flex flex-wrap gap-2">
+                        {selectedApplicantProfile.skills && selectedApplicantProfile.skills.length > 0 ? (
+                           selectedApplicantProfile.skills.map((skill, si) => (
+                              <span key={si} className="px-3 py-1 bg-slate-800 text-slate-300 rounded-lg text-[11px] font-bold border border-slate-700">{skill}</span>
+                           ))
+                        ) : (
+                           <span className="text-slate-500 italic text-sm">General Profile</span>
+                        )}
+                     </div>
+                  </div>
+
+                  <button onClick={() => setIsProfileModalOpen(false)} className="w-full flex-button-secondary py-4">Close Profile</button>
+               </motion.div>
+            </div>
+         )}
+      </AnimatePresence>
     </div>
   );
 };

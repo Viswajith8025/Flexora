@@ -48,7 +48,7 @@ const SKILLS_LIST = [
 ];
 
 const UserProfilePage = () => {
-  const { user: currentUser, logout, refreshUser, isLoading: authLoading } = useAuth();
+  const { user: currentUser, logout, refreshUser, updateUser, isLoading: authLoading } = useAuth();
   const [isFetchingFresh, setIsFetchingFresh] = useState(true);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -170,10 +170,10 @@ const UserProfilePage = () => {
   const role = currentUser.role || 'job_seeker';
   const isProvider = ['job_provider', 'provider', 'partner', 'employer'].includes(role?.toLowerCase());
 
-  const stats = isProvider ? [
-    { label: "Jobs Posted", value: currentUser.completedJobs || 0, icon: <Briefcase size={18} /> },
-    { label: "Avg Rating", value: currentUser.rating > 0 ? currentUser.rating.toFixed(1) : "—", icon: <Star size={18} /> }
-  ] : [
+   const stats = isProvider ? [
+     { label: "Active Listings", value: currentUser.completedJobs || 0, icon: <Briefcase size={18} /> },
+     { label: "Recruiter Rep", value: currentUser.rating > 0 ? currentUser.rating.toFixed(1) : "—", icon: <Star size={18} /> }
+   ] : [
     { label: "Jobs Done", value: currentUser.completedJobs > 0 ? currentUser.completedJobs : "—", icon: <CheckCircle size={18} /> },
     { label: "Skills Matched", value: currentUser.skills?.length || 0, icon: <Zap size={18} /> },
     { label: "Avg Rating", value: currentUser.rating > 0 ? currentUser.rating.toFixed(1) : "—", icon: <Star size={18} /> }
@@ -253,8 +253,10 @@ const UserProfilePage = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="space-y-8 lg:col-span-1">
-            <div className="bg-slate-900/50 border border-slate-800 rounded-[32px] p-8">
-               <h3 className="flex-meta text-white mb-8 border-b border-slate-800 pb-4">Activity Intel</h3>
+             <div className="bg-slate-900/50 border border-slate-800 rounded-[32px] p-8">
+                <h3 className="flex-meta text-white mb-8 border-b border-slate-800 pb-4">
+                   {isProvider ? "Employer Analytics" : "Activity Intel"}
+                </h3>
                <div className="space-y-8">
                  {stats.map((stat, i) => (
                     <div key={i} className="flex items-center gap-5">
@@ -278,53 +280,77 @@ const UserProfilePage = () => {
                        <span className="text-slate-300 text-xs font-bold leading-none">{currentUser.phone || ""}</span>
                     </div>
                  </div>
-                 <div className="flex items-center gap-4">
-                    <div className="w-9 h-9 rounded-xl bg-slate-950 flex items-center justify-center text-slate-700"><Calendar size={16} /></div>
-                    <div className="flex flex-col">
-                       <span className="text-slate-600 text-[8px] font-bold uppercase tracking-widest">Age</span>
-                       <span className="text-slate-300 text-xs font-bold leading-none">{currentUser.age ? `${currentUser.age} Years` : "Not provided"}</span>
-                    </div>
-                 </div>
+                  <div className="flex items-center gap-4">
+                     <div className="w-9 h-9 rounded-xl bg-slate-950 flex items-center justify-center text-slate-700">
+                        {isProvider ? <Shield size={16} /> : <Calendar size={16} />}
+                     </div>
+                     <div className="flex flex-col">
+                        <span className="text-slate-600 text-[8px] font-bold uppercase tracking-widest">
+                           {isProvider ? "Market Presence" : "Age"}
+                        </span>
+                        <span className="text-slate-300 text-xs font-bold leading-none">
+                           {isProvider ? "Verified Partner" : (currentUser.age ? `${currentUser.age} Years` : "Not provided")}
+                        </span>
+                     </div>
+                  </div>
                </div>
             </div>
           </div>
 
           <div className="lg:col-span-2 space-y-8">
-            <div className="bg-slate-900 border border-slate-800 rounded-[40px] p-10 sm:p-14 relative overflow-hidden">
-               <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/5 blur-[100px]" />
-               <h3 className="flex-meta text-white mb-10 flex items-center gap-3"><Zap size={14} className="text-blue-500" /> Skill Inventory</h3>
+             <div className="bg-slate-900 border border-slate-800 rounded-[40px] p-10 sm:p-14 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/5 blur-[100px]" />
+                <h3 className="flex-meta text-white mb-10 flex items-center gap-3">
+                   <Zap size={14} className="text-blue-500" /> 
+                   {isProvider ? "Operational Domains" : "Skill Inventory"}
+                </h3>
                
-               {currentUser.skills?.length > 0 ? (
-                  <div className="flex flex-wrap gap-3">
-                     {currentUser.skills.map((skill, idx) => (
-                        <div key={idx} className="px-5 py-2.5 bg-slate-950 border border-slate-800 rounded-2xl flex items-center gap-3">
-                           <div className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(37,99,235,0.6)]" />
-                           <span className="text-[10px] font-black uppercase tracking-widest text-white">{skill}</span>
-                        </div>
-                     ))}
-                  </div>
-               ) : (
-                  <div className="p-10 border border-dashed border-slate-800 rounded-[32px] text-center">
-                     <p className="text-slate-500 text-xs italic mb-8">No skills added to your inventory yet.</p>
-                     <button onClick={handleOpenEdit} className="flex-button-secondary py-3 px-8 text-white mx-auto">Build Inventory</button>
-                  </div>
-               )}
+                {currentUser.skills?.length > 0 ? (
+                   <div className="flex flex-wrap gap-3">
+                      {currentUser.skills.map((skill, idx) => (
+                         <div key={idx} className="px-5 py-2.5 bg-slate-950 border border-slate-800 rounded-2xl flex items-center gap-3">
+                            <div className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(37,99,235,0.6)]" />
+                            <span className="text-[10px] font-black uppercase tracking-widest text-white">{skill}</span>
+                         </div>
+                      ))}
+                   </div>
+                ) : (
+                   <div className="p-10 border border-dashed border-slate-800 rounded-[32px] text-center">
+                      <p className="text-slate-500 text-xs italic mb-8">
+                         {isProvider ? "No hiring domains defined for your recruiter profile." : "No skills added to your inventory yet."}
+                      </p>
+                      <button onClick={handleOpenEdit} className="flex-button-secondary py-3 px-8 text-white mx-auto">
+                         {isProvider ? "Define Domains" : "Build Inventory"}
+                      </button>
+                   </div>
+                )}
             </div>
 
-            <div className="bg-slate-900/40 border border-slate-800 rounded-[32px] p-10">
-               <div className="flex flex-col md:flex-row gap-10 items-center justify-between">
-                  <div className="space-y-4 max-w-md">
-                     <h4 className="flex-meta text-white flex items-center gap-2"><Shield size={14} className="text-blue-500" /> Account Visibility</h4>
-                     <p className="text-slate-500 text-xs leading-relaxed lowercase italic font-medium">
-                        Your profile is active. Providers in <span className="text-white italic">{currentUser.district || "Kerala"}</span> will prioritize your applications based on your matched skills.
-                     </p>
-                  </div>
-                  <div className="w-full md:w-auto text-center px-10 py-8 bg-slate-950 rounded-[32px] border border-slate-900 shadow-inner">
-                     <p className="text-slate-600 text-[9px] font-bold uppercase tracking-widest mb-2">Profile Rank</p>
-                     <div className="text-3xl font-black text-white italic tracking-tighter uppercase leading-none">Standard</div>
-                  </div>
-               </div>
-            </div>
+             <div className="bg-slate-900/40 border border-slate-800 rounded-[32px] p-10">
+                <div className="flex flex-col md:flex-row gap-10 items-center justify-between">
+                   <div className="space-y-4 max-w-md">
+                      <h4 className="flex-meta text-white flex items-center gap-2">
+                         <Shield size={14} className="text-blue-500" /> 
+                         {isProvider ? "Recruitment Authority" : "Account Visibility"}
+                      </h4>
+                      <p className="text-slate-500 text-xs leading-relaxed lowercase italic font-medium">
+                         {isProvider ? (
+                            <>Your recruiter profile is verified. Candidates in <span className="text-white italic">{currentUser.district || "Kerala"}</span> will see your listings with high priority status.</>
+                         ) : (
+                            <>Your profile is active. Providers in <span className="text-white italic">{currentUser.district || "Kerala"}</span> will prioritize your applications based on your matched skills.</>
+                         )}
+                      </p>
+                   </div>
+                   <div className="w-full md:w-auto text-center px-10 py-8 bg-slate-950 rounded-[32px] border border-slate-900 shadow-inner">
+                      <p className="text-slate-600 text-[9px] font-bold uppercase tracking-widest mb-2">
+                         {isProvider ? "Recruiter Tier" : "Profile Rank"}
+                      </p>
+                      <div className="text-3xl font-black text-white italic tracking-tighter uppercase leading-none">
+                         {isProvider ? "Verified" : "Standard"}
+                      </div>
+                   </div>
+                </div>
+             </div>
           </div>
         </div>
       </main>

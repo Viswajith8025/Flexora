@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
-import api from "../../services/api";
+import api, { BACKEND_URL } from "../../services/api";
 import { motion } from "framer-motion";
 import {
   LayoutDashboard,
@@ -120,8 +120,16 @@ const AdminDashboard = () => {
         {/* Admin Identity + Logout */}
         <div className="p-4 border-t border-slate-900/60">
           <div className="flex items-center gap-3 p-3 rounded-2xl bg-slate-900/40 border border-slate-800/50 mb-3">
-            <div className="w-9 h-9 rounded-xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400 font-black text-sm">
-              {user?.name?.[0] || 'A'}
+            <div className="w-9 h-9 rounded-xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400 font-black text-sm overflow-hidden">
+              {user?.avatar ? (
+                <img 
+                  src={user.avatar.startsWith('/uploads') ? `${BACKEND_URL}${user.avatar}` : user.avatar} 
+                  className="w-full h-full object-cover" 
+                  alt={user.name} 
+                />
+              ) : (
+                user?.name?.[0] || 'A'
+              )}
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-[10px] font-black text-white uppercase tracking-wider truncate">{user?.name}</p>

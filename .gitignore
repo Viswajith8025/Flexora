@@ -44,3 +44,5 @@ debug/
 
 # Local development
 *.local
+# User uploads
+Server/uploads/

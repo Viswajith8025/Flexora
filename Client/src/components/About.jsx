@@ -78,7 +78,15 @@ const About = () => {
         <div className="hidden md:flex items-center gap-8">
           <Link to="/" className="text-sm font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-colors">home</Link>
           <Link to="/about" className="text-sm font-bold uppercase tracking-widest text-white transition-colors underline underline-offset-8 decoration-blue-500 decoration-2">about</Link>
-          <Link to="/jobs" className="text-sm font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-colors">jobs</Link>
+          {(!currentUser || currentUser.role === 'job_seeker') && (
+            <Link to="/jobs" className="text-sm font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-colors">jobs</Link>
+          )}
+          {currentUser?.role === 'job_provider' && (
+            <Link to="/post-job" className="text-sm font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-colors">Post Job</Link>
+          )}
+          {currentUser?.role === 'admin' && (
+            <Link to="/flexora-admin" className="text-blue-500 font-bold text-sm uppercase tracking-widest hover:text-blue-400 transition-colors">Admin Hub</Link>
+          )}
           
           {currentUser ? (
             <div className="flex items-center gap-6 pl-4 border-l border-slate-900">
