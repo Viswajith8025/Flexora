@@ -71,6 +71,15 @@ const jobSchema = new mongoose.Schema({
   razorpayOrderId: String,
   isFlagged: { type: Boolean, default: false },
   isApproved: { type: Boolean, default: false },
+  
+  // High-fidelity details
+  requirements: String,
+  payType: { type: String, default: "hourly" },
+  startDate: Date,
+  endDate: Date,
+  estimatedHours: Number,
+  contactEmail: String,
+  contactPhone: String
 });
 
 // Prevent OverwriteModelError in dev/hot-reload:

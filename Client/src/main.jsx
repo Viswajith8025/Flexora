@@ -16,6 +16,7 @@ import Applicants from "./pages/jobs/Applicants";
 import MyApplications from "./pages/jobs/MyApplications";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import ApprovalQueue from "./pages/admin/ApprovalQueue";
+import JobManagement from "./pages/admin/JobManagement";
 import ModerationCenter from "./pages/admin/ModerationCenter";
 import UserManagement from "./pages/admin/UserManagement";
 
@@ -73,6 +74,7 @@ createRoot(document.getElementById("root")).render(
               <AdminDashboard />
             </AuthRoute>
           }>
+            <Route path="jobs" element={<JobManagement />} />
             <Route path="approvals" element={<ApprovalQueue />} />
             <Route path="moderation" element={<ModerationCenter />} />
             <Route path="users" element={<UserManagement />} />

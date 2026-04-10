@@ -9,6 +9,8 @@ export const getStats = async (req, res) => {
       openJobs: await Job.countDocuments({ status: "open" }),
       reportedJobs: await Job.countDocuments({ "reports.0": { $exists: true } }),
       flaggedJobs: await Job.countDocuments({ isFlagged: true }),
+      seekerCount: await User.countDocuments({ role: "job_seeker" }),
+      providerCount: await User.countDocuments({ role: "job_provider" }),
       newUsersLastWeek: await User.countDocuments({
         createdAt: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) }
       })

@@ -44,6 +44,7 @@ export default {
 
   // Jobs
   getJobs: (params) => api.get('jobs', { params }),
+  getPublicStats: () => api.get('jobs/stats'),
   createJob: (data) => api.post('jobs', data),
   applyToJob: (id) => api.post(`jobs/apply/${id}`),
   applyForJob: (id) => api.post(`jobs/apply/${id}`), 
@@ -81,7 +82,7 @@ export default {
   // Provider Management
   getMyJobs: () => api.get('jobs/my-jobs'),
   getProviderJobs: () => api.get('jobs/provider/jobs'),
-  updateApplicationStatus: (data) => api.put('jobs/application/status', data),
+  updateApplicationStatus: (jobId, userId, status) => api.patch(`jobs/${jobId}/applicants/${userId}/status`, { status }),
 
   // Notifications
   getNotifications: () => api.get('notifications'),

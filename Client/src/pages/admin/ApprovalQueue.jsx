@@ -12,14 +12,18 @@ import {
   AlertCircle,
   Zap,
   User,
-  ExternalLink
+  ExternalLink,
+  Eye
 } from "lucide-react";
 import toast from "react-hot-toast";
+import JobDetailModal from "../../components/JobDetailModal";
 
 const ApprovalQueue = () => {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState(null);
+  const [selectedJobForDetail, setSelectedJobForDetail] = useState(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
   useEffect(() => {
     fetchPendingJobs();
@@ -118,27 +122,44 @@ const ApprovalQueue = () => {
 
                      <div className="flex flex-col sm:flex-row lg:flex-col gap-3 shrink-0 w-full lg:w-48">
                         <button 
-                          onClick={() => handleApprove(job._id || job.id)}
-                          disabled={processingId === (job._id || job.id)}
-                          className="flex items-center justify-center gap-3 py-4 bg-emerald-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-emerald-500 transition-all shadow-xl shadow-emerald-500/10 group/btn"
-                        >
-                           {processingId === (job._id || job.id) ? (
-                              <Clock className="animate-spin" size={16} />
-                           ) : (
-                              <>
-                                 Approve Listing <CheckCircle size={16} className="group-hover/btn:scale-110 transition-transform" />
-                              </>
-                           )}
-                        </button>
-                        <button className="flex items-center justify-center gap-3 py-4 bg-slate-900 border border-slate-800 text-slate-500 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/30 transition-all">
-                           Reject <XCircle size={16} />
-                        </button>
-                     </div>
-                  </motion.div>
-               ))}
-            </AnimatePresence>
-         </div>
-      )}
+                           onClick={() => {
+                              setSelectedJobForDetail(job);
+                              setIsDetailModalOpen(true);
+                           }}
+                           className="flex items-center justify-center gap-3 py-4 bg-slate-900 border border-slate-800 text-blue-500 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:border-blue-500/30 transition-all"
+                         >
+                            Review Full Specs <Eye size={16} />
+                         </button>
+                         <button 
+                           onClick={() => handleApprove(job._id || job.id)}
+                           disabled={processingId === (job._id || job.id)}
+                           className="flex items-center justify-center gap-3 py-4 bg-emerald-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-emerald-500 transition-all shadow-xl shadow-emerald-500/10 group/btn"
+                         >
+                            {processingId === (job._id || job.id) ? (
+                               <Clock className="animate-spin" size={16} />
+                            ) : (
+                               <>
+                                  Approve Listing <CheckCircle size={16} className="group-hover/btn:scale-110 transition-transform" />
+                               </>
+                            )}
+                         </button>
+                         <button className="flex items-center justify-center gap-3 py-4 bg-slate-900 border border-slate-800 text-slate-500 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/30 transition-all">
+                            Reject <XCircle size={16} />
+                         </button>
+                      </div>
+                   </motion.div>
+                ))}
+             </AnimatePresence>
+          </div>
+       )}
+
+       {/* Admin Review Modal */}
+       <JobDetailModal
+          job={selectedJobForDetail}
+          isOpen={isDetailModalOpen}
+          onClose={() => setIsDetailModalOpen(false)}
+          isAdminView={true}
+       />
 
       {jobs.length > 0 && (
          <div className="flex justify-center pt-8">

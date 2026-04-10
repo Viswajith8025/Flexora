@@ -116,9 +116,9 @@ const NotificationDropdown = () => {
                   </div>
                 ) : (
                   <div className="divide-y divide-slate-800/50">
-                    {notifications.map((n) => (
+                    {notifications.map((n, i) => (
                       <div 
-                        key={n._id}
+                        key={n._id || i}
                         className={`p-5 hover:bg-slate-800/40 transition-colors relative group ${!n.isRead ? 'bg-blue-600/5' : ''}`}
                         onClick={() => !n.isRead && markAsRead(n._id)}
                       >

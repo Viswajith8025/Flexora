@@ -56,6 +56,7 @@ const AdminDashboard = () => {
   const menuItems = [
     { label: "Overview", icon: <LayoutDashboard size={16} />, path: "/flexora-admin" },
     { label: "Members", icon: <Users size={16} />, path: "/flexora-admin/users", badge: null },
+    { label: "Jobs Registry", icon: <Briefcase size={16} />, path: "/flexora-admin/jobs", badge: stats?.totalJobs || null },
     { label: "Approval Queue", icon: <CheckCircle size={16} />, path: "/flexora-admin/approvals", badge: pendingCount > 0 ? pendingCount : null },
     { label: "Moderation", icon: <AlertTriangle size={16} />, path: "/flexora-admin/moderation", badge: stats?.reportedJobs > 0 ? stats.reportedJobs : null },
   ];
@@ -94,11 +95,10 @@ const AdminDashboard = () => {
               <Link
                 key={item.label}
                 to={item.path}
-                className={`flex items-center justify-between px-4 py-3 rounded-2xl transition-all group ${
-                  isActive
+                className={`flex items-center justify-between px-4 py-3 rounded-2xl transition-all group ${isActive
                     ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20"
                     : "text-slate-500 hover:text-white hover:bg-slate-900/60"
-                }`}
+                  }`}
               >
                 <div className="flex items-center gap-3 font-bold text-[10px] uppercase tracking-widest">
                   {item.icon}
@@ -192,7 +192,7 @@ const AdminDashboard = () => {
                   { label: "Flagged Content", value: stats?.reportedJobs || 0, icon: <AlertTriangle size={16} />, sub: "Need moderation", color: "text-red-400", glow: "bg-red-600/5" },
                 ].map((s, i) => (
                   <motion.div
-                    key={i}
+                    key={s.label}
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.06 }}
@@ -217,10 +217,18 @@ const AdminDashboard = () => {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                   {[
                     {
-                      label: "Member Registry",
-                      desc: "View all job seekers and providers. Monitor activity, manage accounts.",
+                      label: "User Oversight",
+                      desc: "Monitor platform participants. Manage seeker/provider status and account health.",
                       icon: <Users size={22} />,
                       path: "/flexora-admin/users",
+                      color: "text-violet-400",
+                      border: "hover:border-violet-600/30",
+                    },
+                    {
+                      label: "Job Registry",
+                      desc: "Complete database audit of all platform listings. Search, filter, and moderate every job.",
+                      icon: <Briefcase size={22} />,
+                      path: "/flexora-admin/jobs",
                       color: "text-blue-400",
                       border: "hover:border-blue-600/30",
                     },
@@ -233,18 +241,10 @@ const AdminDashboard = () => {
                       border: "hover:border-emerald-600/30",
                       badge: pendingCount,
                     },
-                    {
-                      label: "Moderation Center",
-                      desc: "Review reported and flagged jobs. Remove violations from the platform.",
-                      icon: <AlertTriangle size={22} />,
-                      path: "/flexora-admin/moderation",
-                      color: "text-amber-400",
-                      border: "hover:border-amber-600/30",
-                      badge: stats?.reportedJobs,
-                    },
-                  ].map((card, i) => (
+
+                  ].map((card) => (
                     <Link
-                      key={i}
+                      key={card.label}
                       to={card.path}
                       className={`p-8 bg-slate-900 border border-slate-800 rounded-[32px] group transition-all ${card.border} hover:bg-slate-900/80`}
                     >
@@ -272,11 +272,11 @@ const AdminDashboard = () => {
                   </p>
                   <div className="space-y-5">
                     {[
-                      { label: "Open Jobs", value: stats?.openJobs || 0, total: stats?.totalJobs || 1, color: "bg-blue-500" },
                       { label: "Approved Jobs", value: (stats?.totalJobs || 0) - (pendingCount || 0), total: stats?.totalJobs || 1, color: "bg-emerald-500" },
+                      { label: "Pending Review", value: pendingCount, total: stats?.totalJobs || 1, color: "bg-amber-500" },
                       { label: "Flagged Content", value: stats?.flaggedJobs || 0, total: stats?.totalJobs || 1, color: "bg-red-500" },
-                    ].map((m, i) => (
-                      <div key={i}>
+                    ].map((m) => (
+                      <div key={m.label}>
                         <div className="flex justify-between mb-2">
                           <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{m.label}</span>
                           <span className="text-[9px] font-black text-white">{m.value}</span>
@@ -298,15 +298,18 @@ const AdminDashboard = () => {
                   </p>
                   <div className="space-y-5">
                     {[
-                      { label: "Job Seekers", icon: <UserCheck size={14} />, color: "text-emerald-400 bg-emerald-500/10" },
-                      { label: "Job Providers", icon: <Building2 size={14} />, color: "text-violet-400 bg-violet-500/10" },
-                      { label: "Total Platform Jobs", icon: <Briefcase size={14} />, color: "text-blue-400 bg-blue-500/10" },
-                    ].map((r, i) => (
-                      <div key={i} className="flex items-center gap-4 p-3 rounded-2xl bg-slate-950/50 border border-slate-900">
-                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${r.color}`}>
-                          {r.icon}
+                      { label: "Job Seekers", icon: <UserCheck size={14} />, color: "text-emerald-400 bg-emerald-500/10", value: stats?.seekerCount || 0 },
+                      { label: "Job Providers", icon: <Building2 size={14} />, color: "text-violet-400 bg-violet-500/10", value: stats?.providerCount || 0 },
+                      { label: "Total Platform Jobs", icon: <Briefcase size={14} />, color: "text-blue-400 bg-blue-500/10", value: stats?.totalJobs || 0 },
+                    ].map((r) => (
+                      <div key={r.label} className="flex items-center justify-between p-4 rounded-2xl bg-slate-950/50 border border-slate-900 group hover:border-slate-800 transition-colors">
+                        <div className="flex items-center gap-4">
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${r.color}`}>
+                            {r.icon}
+                          </div>
+                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{r.label}</span>
                         </div>
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{r.label}</span>
+                        <span className="text-xl font-black text-white px-4 border-l border-slate-900">{r.value}</span>
                       </div>
                     ))}
                   </div>

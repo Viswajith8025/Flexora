@@ -23,6 +23,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../../context/AuthContext";
 import logo from "../../assets/logooo.png";
+import JobDetailModal from "../../components/JobDetailModal";
 
 const loadRazorpayScript = () => {
   return new Promise((resolve) => {
@@ -41,6 +42,8 @@ const MyJobs = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [viewMode, setViewMode] = useState("grid"); // grid or list
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedJobForDetail, setSelectedJobForDetail] = useState(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
   useEffect(() => {
     fetchMyJobs();
@@ -285,12 +288,21 @@ const MyJobs = () => {
                     )}
                     
                     <button 
+                       onClick={() => {
+                          setSelectedJobForDetail(job);
+                          setIsDetailModalOpen(true);
+                       }}
+                       className="p-3.5 bg-slate-900 border border-slate-800 text-slate-500 rounded-xl hover:text-white hover:border-slate-700 transition-all flex items-center justify-center"
+                       title="View Listing Details"
+                    >
+                      <Eye size={16} />
+                    </button>
+                    <button 
                       onClick={() => navigate(`/jobs/${job._id}/applicants`)}
                       className="flex-1 flex items-center justify-center gap-2 bg-blue-600 text-white py-3.5 px-6 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-500 transition-all shadow-lg shadow-blue-600/10"
                     >
                       View Applicants <ChevronRight size={14} />
                     </button>
-                    
                     <button className="p-3.5 bg-slate-900 border border-slate-800 text-slate-500 rounded-xl hover:text-white hover:border-slate-700 transition-all">
                       <MoreVertical size={16} />
                     </button>
@@ -301,6 +313,14 @@ const MyJobs = () => {
           </div>
         )}
       </main>
+
+      {/* Shared Detail Modal */}
+      <JobDetailModal
+         job={selectedJobForDetail}
+         isOpen={isDetailModalOpen}
+         onClose={() => setIsDetailModalOpen(false)}
+         isProviderView={true}
+      />
     </div>
   );
 };

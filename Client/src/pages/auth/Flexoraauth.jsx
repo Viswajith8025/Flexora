@@ -22,7 +22,8 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 
 const FlexoraAuth = () => {
   const { login } = useAuth();
-  const [isLogin, setIsLogin] = useState(true);
+  const location = useLocation();
+  const [isLogin, setIsLogin] = useState(location.state?.mode !== 'signup');
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -33,7 +34,6 @@ const FlexoraAuth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
-  const location = useLocation();
 
   const intendedRoute = location.state?.from || "/";
 
@@ -200,17 +200,22 @@ const FlexoraAuth = () => {
             </motion.div>
           )}
 
-          {/* Identity Persistence Warning */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-8 p-4 bg-amber-500/5 border border-amber-500/10 rounded-2xl flex items-start gap-3"
-          >
-            <AlertCircle size={16} className="text-amber-500 mt-0.5 shrink-0" />
-            <p className="text-[9px] font-bold uppercase tracking-widest text-amber-500/80 leading-relaxed italic">
-              Careful: Full Name and Email cannot be changed later. Password is also permanent in this version.
-            </p>
-          </motion.div>
+          {/* Identity Persistence Warning (Signup Only) */}
+          <AnimatePresence>
+            {!isLogin && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="mb-8 p-4 bg-amber-500/5 border border-amber-500/10 rounded-2xl flex items-start gap-3 shadow-lg shadow-amber-500/5"
+              >
+                <AlertCircle size={16} className="text-amber-500 mt-0.5 shrink-0" />
+                <p className="text-[9px] font-bold uppercase tracking-widest text-amber-500/80 leading-relaxed italic">
+                  Careful: Full Name and Email cannot be changed later. Password is also permanent in this version.
+                </p>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <AnimatePresence mode="wait">

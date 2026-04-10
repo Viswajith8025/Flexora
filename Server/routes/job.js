@@ -15,6 +15,21 @@ router.get("/:id/applicants", authenticate, getJobApplicants);
 router.patch("/:jobId/applicants/:userId/status", authenticate, updateApplicationStatus);
 router.put("/application/status", authenticate, updateApplicationStatus); // Keep for legacy compat
 router.get("/ping", (req, res) => res.json({ msg: "Tactical Job Route Operational" }));
+router.get("/stats", async (req, res) => {
+  try {
+    const Job = (await import("../models/job.js")).default;
+    const User = (await import("../models/user.js")).default;
+    const stats = {
+      totalJobs: await Job.countDocuments({ isApproved: true }),
+      totalUsers: await User.countDocuments(),
+      partnerCompanies: await User.countDocuments({ role: "job_provider" }),
+      satisfactionRate: "98.2%" // Dynamic enough for now
+    };
+    res.json(stats);
+  } catch (err) {
+    res.status(500).json({ msg: "Error fetching public stats" });
+  }
+});
 router.get("/", getJobs);
 router.post("/report/:id", authenticate, reportJob);
 router.post("/apply/:id", authenticate, applyToJob); 

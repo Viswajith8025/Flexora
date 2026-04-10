@@ -28,6 +28,20 @@ import { useAuth } from "../../context/AuthContext";
 import NotificationDropdown from "../../components/NotificationDropdown";
 import { LogOut } from "lucide-react";
 
+// ─── Constants ──────────────────────────────────────────────────────────────
+const jobTypes = [
+  { value: "general", label: "General Assistance" },
+  { value: "events", label: "Event Logistics" },
+  { value: "digital", label: "Digital Content" },
+  { value: "delivery", label: "Delivery Lead" },
+  { value: "retail", label: "Retail Support" },
+  { value: "hospitality", label: "Hospitality Service" },
+  { value: "logistics", label: "Logistics Operations" },
+  { value: "security", label: "Security & Safety" },
+  { value: "technical", label: "Technical Support" },
+  { value: "creative", label: "Creative Design" }
+];
+
 // ─── Reusable Field Components ────────────────────────────────────────────────
 
 const FieldLabel = ({ children, hint }) => (
@@ -185,19 +199,6 @@ const PostJob = () => {
     contactEmail: "",
     contactPhone: "",
   });
-
-  const jobTypes = [
-    { value: "general", label: "General Assistance" },
-    { value: "events", label: "Event Logistics" },
-    { value: "digital", label: "Digital Content" },
-    { value: "delivery", label: "Delivery Lead" },
-    { value: "retail", label: "Retail Support" },
-    { value: "hospitality", label: "Hospitality Service" },
-    { value: "logistics", label: "Logistics Operations" },
-    { value: "security", label: "Security & Safety" },
-    { value: "technical", label: "Technical Support" },
-    { value: "creative", label: "Creative Design" }
-  ];
 
   useEffect(() => {
     // Sync local form state if needed, but currentUser is handled by hook

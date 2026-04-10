@@ -19,15 +19,32 @@ import logo from '../assets/logooo.png';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import SlideButton from './SlideButton';
-import AuthModal from './AuthModal';
 import NotificationDropdown from './NotificationDropdown';
 import { User } from 'lucide-react';
+import api from '../services/api';
 
 const Flexora = () => {
   const { user: currentUser, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [authInitialMode, setAuthInitialMode] = useState("login");
+
+  const [stats, setStats] = useState({
+    totalJobs: 0,
+    totalUsers: 0,
+    partnerCompanies: 0,
+    satisfactionRate: "98.2%"
+  });
+
+  useEffect(() => {
+    const fetchPublicStats = async () => {
+      try {
+        const { data } = await api.getPublicStats();
+        setStats(prev => ({ ...prev, ...data }));
+      } catch (err) {
+        console.error("Stats Fetch Error:", err);
+      }
+    };
+    fetchPublicStats();
+  }, []);
 
   const features = [
     {
@@ -53,14 +70,14 @@ const Flexora = () => {
   ];
 
   const jobTypes = [
-    { name: "Event Crew", icon: <Users size={24} className="text-blue-500" />, jobs: "42 active" },
-    { name: "Delivery Partner", icon: <Zap size={24} className="text-amber-500" />, jobs: "128 active" },
-    { name: "Hospitality", icon: <Shield size={24} className="text-emerald-500" />, jobs: "85 active" },
-    { name: "Technical Support", icon: <TrendingUp size={24} className="text-purple-500" />, jobs: "31 active" },
-    { name: "Marketing", icon: <Briefcase size={24} className="text-rose-500" />, jobs: "19 active" },
-    { name: "Logistics", icon: <Building2 size={24} className="text-sky-500" />, jobs: "64 active" },
-    { name: "Photography", icon: <Zap size={24} className="text-yellow-500" />, jobs: "12 active" },
-    { name: "Consulting", icon: <Building2 size={24} className="text-indigo-500" />, jobs: "24 active" }
+    { name: "Event Crew", icon: <Users size={24} className="text-blue-500" /> },
+    { name: "Delivery Partner", icon: <Zap size={24} className="text-amber-500" /> },
+    { name: "Hospitality", icon: <Shield size={24} className="text-emerald-500" /> },
+    { name: "Technical Support", icon: <TrendingUp size={24} className="text-purple-500" /> },
+    { name: "Marketing", icon: <Briefcase size={24} className="text-rose-500" /> },
+    { name: "Logistics", icon: <Building2 size={24} className="text-sky-500" /> },
+    { name: "Photography", icon: <Zap size={24} className="text-yellow-500" /> },
+    { name: "Consulting", icon: <Building2 size={24} className="text-indigo-500" /> }
   ];
 
   const howItWorks = {
@@ -81,11 +98,6 @@ const Flexora = () => {
   const scrollToSection = (id) => {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
     setIsMenuOpen(false);
-  };
-
-  const openAuth = (mode = "login") => {
-    setAuthInitialMode(mode);
-    setIsAuthModalOpen(true);
   };
 
   const handleLogout = () => {
@@ -140,10 +152,10 @@ const Flexora = () => {
               </div>
             ) : (
               <>
-                <button onClick={() => openAuth("login")} className="text-sm font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-colors">
+                <Link to="/flexoraauth" state={{ mode: 'login' }} className="text-sm font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-colors">
                   log in
-                </button>
-                <SlideButton onClick={() => openAuth("signup")} className="px-6 py-2 !text-[10px] uppercase">
+                </Link>
+                <SlideButton to="/flexoraauth" state={{ mode: 'signup' }} className="px-6 py-2 !text-[10px] uppercase">
                   signup
                 </SlideButton>
               </>
@@ -178,8 +190,8 @@ const Flexora = () => {
                 <Link to="/flexora-admin" className="block text-xs font-bold uppercase tracking-widest text-blue-400" onClick={() => setIsMenuOpen(false)}>admin hub</Link>
               )}
               <div className="pt-4 border-t border-slate-800 flex flex-col gap-3">
-                <button onClick={() => { openAuth("login"); setIsMenuOpen(false); }} className="text-center py-3 text-xs font-bold uppercase tracking-widest text-slate-400">log in</button>
-                <button onClick={() => { openAuth("signup"); setIsMenuOpen(false); }} className="bg-blue-600 text-white py-4 rounded-xl text-center text-xs font-bold uppercase tracking-widest shadow-lg shadow-blue-600/20">signup</button>
+                <Link to="/flexoraauth" state={{ mode: 'login' }} onClick={() => setIsMenuOpen(false)} className="text-center py-3 text-xs font-bold uppercase tracking-widest text-slate-400">log in</Link>
+                <Link to="/flexoraauth" state={{ mode: 'signup' }} onClick={() => setIsMenuOpen(false)} className="bg-blue-600 text-white py-4 rounded-xl text-center text-xs font-bold uppercase tracking-widest shadow-lg shadow-blue-600/20">signup</Link>
               </div>
             </motion.div>
           )}
@@ -218,8 +230,8 @@ const Flexora = () => {
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
                 <SlideButton
-                  onClick={() => !currentUser ? openAuth("signup") : null}
-                  to={currentUser ? "/post-job" : undefined}
+                  to={currentUser ? "/post-job" : "/flexoraauth"}
+                  state={!currentUser ? { mode: 'signup' } : undefined}
                   className="w-full sm:w-auto !py-4 !px-10 !text-base shadow-xl shadow-blue-600/25"
                 >
                   Post a Job
@@ -240,10 +252,10 @@ const Flexora = () => {
           <div className="max-w-7xl mx-auto px-6">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 sm:gap-12">
               {[
-                { number: "2,481", label: "Active Opportunites" },
-                { number: "8,247", label: "Verified Specialists" },
-                { number: "1,152", label: "Partner Companies" },
-                { number: "96.4%", label: "Satisfaction Rate" }
+                { number: stats.totalJobs.toLocaleString(), label: "Active Opportunites" },
+                { number: stats.totalUsers.toLocaleString(), label: "Verified Specialists" },
+                { number: stats.partnerCompanies.toLocaleString(), label: "Partner Companies" },
+                { number: stats.satisfactionRate, label: "Satisfaction Rate" }
               ].map((stat) => (
                 <div key={stat.label} className="text-center group cursor-default">
                   <div className="text-3xl sm:text-4xl font-black text-white mb-1 tracking-tight group-hover:text-blue-500 transition-colors">{stat.number}</div>
@@ -282,7 +294,7 @@ const Flexora = () => {
                   </div>
                   <div className="flex-label text-white uppercase mb-1">{job.name}</div>
                   <div className="text-[9px] font-bold uppercase tracking-widest text-slate-500 group-hover:text-blue-400 transition-colors italic">
-                    {job.jobs}
+                    Marketplace Sector
                   </div>
                 </Link>
               ))}
@@ -406,8 +418,8 @@ const Flexora = () => {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <SlideButton
-                onClick={() => !currentUser ? openAuth("signup") : null}
-                to={currentUser ? "/flexoraauth" : undefined}
+                to="/flexoraauth"
+                state={!currentUser ? { mode: 'signup' } : undefined}
                 className="w-full sm:w-auto !py-4 !px-10 shadow-xl shadow-blue-600/20"
               >
                 Create Account
@@ -416,12 +428,6 @@ const Flexora = () => {
                 Browse Jobs
               </SlideButton>
             </div>
-
-            <AuthModal
-              isOpen={isAuthModalOpen}
-              onClose={() => setIsAuthModalOpen(false)}
-              initialMode={authInitialMode}
-            />
           </div>
         </section>
       </main>

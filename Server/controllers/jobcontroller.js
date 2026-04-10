@@ -19,7 +19,9 @@ export const createJob = async (req, res) => {
       title: title || jobTitle,
       description,
       location,
-      date: date || startDate,
+      date: date || startDate, // Legacy support
+      startDate: startDate || date,
+      endDate: endDate,
       compensation: compensation || payRate,
       payType: payType || "hourly",
       category: (category || jobType || "general").toLowerCase(),
@@ -28,7 +30,7 @@ export const createJob = async (req, res) => {
       contactEmail,
       contactPhone,
       provider: req.user.id,
-      isApproved: true // Instant visibility for now
+      isApproved: false // Requires Admin Verification
     });
 
     await newJob.save();
@@ -211,8 +213,10 @@ export const getSavedJobs = async (req, res) => {
 
 export const getProviderJobs = async (req, res) => {
   try {
-    // Providers see all their jobs, including pending ones
-    const jobs = await Job.find({ provider: req.user.id }).sort({ createdAt: -1 });
+    // Providers see all their jobs, including pending ones, with populated applicant details
+    const jobs = await Job.find({ provider: req.user.id })
+      .populate("applicants.user", "name email phone avatar rating completedJobs")
+      .sort({ createdAt: -1 });
     res.json(jobs);
   } catch (err) {
     res.status(500).json({ msg: "Error fetching provider jobs", error: err.message });

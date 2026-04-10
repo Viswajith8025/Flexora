@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import api from "../services/api";
 import toast from 'react-hot-toast';
 import JobCard from "./Jobcard";
+import JobDetailModal from "./JobDetailModal";
 
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -92,10 +93,10 @@ const ApplicationSuccessModal = ({ job, onClose }) => (
             <div className="absolute left-[18px] top-6 bottom-6 w-px bg-slate-900" />
 
             <div className="space-y-8">
-              {[
+              { [
                 { icon: CheckCircle, label: "Application Received", sub: "Your credentials have been securely transmitted", status: "done", color: "text-green-500" },
                 { icon: Eye, label: "Under Review", sub: "Employer will verify within 48 hours", status: "active", color: "text-blue-500" },
-                { icon: Send, label: "Interview Intent", sub: "Notifications will appear in your dashboard", status: "pending", color: "text-slate-800" },
+                { icon: Target, label: "Interview Intent", sub: "Notifications will appear in your dashboard", status: "pending", color: "text-slate-800" },
               ].map((step, i) => (
                 <div key={i} className="flex items-start gap-5 relative">
                   <div className={`w-9 h-9 rounded-xl flex items-center justify-center border shrink-0 z-10 ${
@@ -145,6 +146,8 @@ const FlexoraDashboard = () => {
   const [isApplicantsModalOpen, setIsApplicantsModalOpen] = useState(false);
   const [selectedApplicationDetails, setSelectedApplicationDetails] = useState(null);
   const [selectedJobForApplicants, setSelectedJobForApplicants] = useState(null);
+  const [selectedJobForDetail, setSelectedJobForDetail] = useState(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   
   // Application Handling
   const navigate = useNavigate();
@@ -153,46 +156,6 @@ const FlexoraDashboard = () => {
   const [appliedJobs, setAppliedJobs] = useState(new Set());
 
   useEffect(() => {
-    // Mock featured jobs data
-    setFeaturedJobs([
-      {
-        id: 1,
-        title: "Senior Event Coordinator",
-        company: "Kochi Pulse Events",
-        location: "Kochi, Kerala",
-        pay: 1500,
-        type: "One-time",
-        rating: 4.9,
-        urgent: true,
-        description: "Coordinate luxury corporate events and high-profile summits",
-        category: "events"
-      },
-      {
-        id: 2,
-        title: "Delivery Lead - Premium",
-        company: "Kerala Swift",
-        location: "Trivandrum, Kerala",
-        pay: 450,
-        type: "Per hour",
-        rating: 4.8,
-        urgent: false,
-        description: "Specialized logistics for premium regional deliveries",
-        category: "delivery"
-      },
-      {
-        id: 3,
-        title: "Content Strategist",
-        company: "Cyberpark Digital",
-        location: "Kozhikode, Kerala",
-        pay: 2000,
-        type: "Project",
-        rating: 4.7,
-        urgent: false,
-        description: "Develop digital growth strategies for regional startups",
-        category: "digital"
-      }
-    ]);
-
     if (currentUser) {
       const applied = JSON.parse(localStorage.getItem('appliedJobs') || '[]');
       setAppliedJobs(new Set(applied));
@@ -204,10 +167,12 @@ const FlexoraDashboard = () => {
             const { data } = await api.getJobs({ limit: 3 });
             if (data && Array.isArray(data)) {
                setFeaturedJobs(data);
+            } else {
+               setFeaturedJobs([]);
             }
          } catch (err) {
-            console.error("CRITICAL Marketplace Fetch Error:", err.response?.data || err.message);
-            // Default tiles already set in initial state if this fails
+            console.error("Marketplace Fetch Error:", err.message);
+            setFeaturedJobs([]);
          }
       }
 
@@ -297,7 +262,7 @@ const FlexoraDashboard = () => {
 
   const handleUpdateApplicantStatus = async (jobId, userId, status) => {
      try {
-        await api.updateApplicationStatus({ jobId, userId, status });
+        await api.updateApplicationStatus(jobId, userId, status);
         toast.success(`Candidate ${status === 'accepted' ? 'Hired' : 'Declined'}`);
         fetchDashboardData();
      } catch (err) {
@@ -379,7 +344,7 @@ const FlexoraDashboard = () => {
         {/* Dynamic Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
           {currentUser?.role === 'job_provider' ? (
-            <>
+            <React.Fragment key="provider-stats">
               <div className="flex-card flex-card-padding">
                 <div className="flex-label mb-5 flex items-center gap-2">
                    <Target size={14} className="text-blue-500" /> Active Listings
@@ -407,9 +372,9 @@ const FlexoraDashboard = () => {
                   <span className="text-slate-700 text-lg ml-1 uppercase">Hires/Job</span>
                 </div>
               </div>
-            </>
+            </React.Fragment>
           ) : (
-            <>
+            <React.Fragment key="seeker-stats">
               <div className="flex-card flex-card-padding group">
                 <div className="flex-label mb-5 flex items-center gap-2">
                    <Briefcase size={14} className="text-blue-500" /> Total Applications
@@ -436,7 +401,7 @@ const FlexoraDashboard = () => {
                   {seekerStats.total ? Math.round((seekerStats.accepted / seekerStats.total) * 100) : 0}<span className="text-slate-700 text-lg ml-1">%</span>
                 </div>
               </div>
-            </>
+            </React.Fragment>
           )}
         </div>
 
@@ -478,6 +443,10 @@ const FlexoraDashboard = () => {
                              <JobCard
                                 key={job._id || job.id}
                                 job={job}
+                                onClick={() => {
+                                   setSelectedJobForDetail(job);
+                                   setIsDetailModalOpen(true);
+                                }}
                                 customAction={
                                    <div className="flex flex-col gap-2 w-full">
                                       {job.applicants?.length > 0 && (
@@ -533,9 +502,9 @@ const FlexoraDashboard = () => {
                       </div>
                    ) : (
                       <div className="space-y-3">
-                         {myApplications.map((app) => (
+                         {myApplications.map((app, i) => (
                             <motion.div
-                               key={app._id}
+                               key={app._id || `app-${i}`}
                                initial={{ opacity: 0, y: 10 }}
                                animate={{ opacity: 1, y: 0 }}
                                className="interactive-row group"
@@ -585,10 +554,14 @@ const FlexoraDashboard = () => {
                       </h3>
                    </div>
                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {featuredJobs.map((job) => (
+                      {featuredJobs.map((job, i) => (
                          <JobCard
-                            key={job._id || job.id}
+                            key={job._id || job.id || `featured-${i}`}
                             job={job}
+                            onClick={() => {
+                               setSelectedJobForDetail(job);
+                               setIsDetailModalOpen(true);
+                            }}
                             onApply={handleApply}
                             isApplying={loadingApplyId === (job._id || job.id)}
                             customAction={appliedJobs.has(job._id || job.id) ? (
@@ -646,9 +619,9 @@ const FlexoraDashboard = () => {
       {/* Applicant Review Modal (Provider View) */}
       <AnimatePresence>
          {isApplicantsModalOpen && selectedJobForApplicants && (
-            <div className="fixed inset-0 z-[200] flex items-center justify-center p-6">
-               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} onClick={() => setIsApplicantsModalOpen(false)} className="absolute inset-0 bg-slate-950/90 backdrop-blur-sm" />
-               <motion.div initial={{ opacity: 0, scale: 0.97, y: 8 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.97, y: 8 }} transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }} className="relative w-full max-w-4xl bg-slate-900 border border-slate-800 rounded-[40px] overflow-hidden shadow-2xl p-8 sm:p-12 flex flex-col max-h-[85vh]">
+            <div key="applicants-modal-overlay" className="fixed inset-0 z-[200] flex items-center justify-center p-6">
+               <motion.div key="backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} onClick={() => setIsApplicantsModalOpen(false)} className="absolute inset-0 bg-slate-950/90 backdrop-blur-sm" />
+               <motion.div key="modal-content" initial={{ opacity: 0, scale: 0.97, y: 8 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.97, y: 8 }} transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }} className="relative w-full max-w-4xl bg-slate-900 border border-slate-800 rounded-[40px] overflow-hidden shadow-2xl p-8 sm:p-12 flex flex-col max-h-[85vh]">
                   <div className="flex justify-between items-start mb-10">
                      <div>
                         <h2 className="flex-title-sm mb-2">Applicants for <span className="text-blue-500">{selectedJobForApplicants.title}</span></h2>
@@ -665,49 +638,47 @@ const FlexoraDashboard = () => {
                         </div>
                      ) : (
                         <div className="space-y-4">
-                           {selectedJobForApplicants.applicants.map((applicant, idx) => (
-                              <div key={idx} className="flex-card p-6 sm:p-8 flex flex-col md:flex-row items-center justify-between gap-8 group hover:border-slate-700 transition-colors mb-4 last:mb-0">
-                                 <div className="flex items-center gap-6">
-                                    <div className="w-14 h-14 rounded-xl bg-blue-600 flex items-center justify-center text-white text-xl font-bold shadow-lg shadow-blue-600/10 shrink-0">
-                                       {applicant.name?.[0] || 'A'}
-                                    </div>
-                                    <div>
-                                       <h4 className="text-lg font-bold text-white tracking-tight mb-1 leading-tight">{applicant.name}</h4>
-                                       <div className="flex items-center gap-3 flex-meta">
-                                          <span className="text-blue-500">{applicant.email}</span>
-                                          <span className="text-slate-800">|</span>
-                                          <span className="flex items-center gap-1"><Star size={10} className="fill-amber-500 text-amber-500" /> 4.9 Rating</span>
-                                       </div>
-                                    </div>
-                                 </div>
-                                 
-                                 <div className="flex items-center gap-3 w-full md:w-auto">
-                                    {applicant.status === 'pending' ? (
-                                       <>
-                                          <SlideButton 
-                                             onClick={() => handleUpdateApplicantStatus(selectedJobForApplicants._id, applicant.userId, 'accepted')}
-                                             className="flex-1 md:flex-none !px-8 !py-3 shadow-lg shadow-blue-600/20"
-                                          >
-                                             Hire
-                                          </SlideButton>
-                                          <button 
-                                             onClick={() => handleUpdateApplicantStatus(selectedJobForApplicants._id, applicant.userId, 'rejected')}
-                                             className="flex-1 md:flex-none flex-button-secondary px-8 text-red-500 hover:border-red-500/30"
-                                          >
-                                             Decline
-                                          </button>
-                                       </>
-                                    ) : (
-                                       <div className={`px-8 py-3 rounded-xl border flex-label ${
-                                          applicant.status === 'accepted' ? "bg-green-600/10 text-green-500 border-green-500/20" : "bg-red-600/10 text-red-500 border-red-500/20"
-                                       }`}>
-                                          {applicant.status === 'accepted' ? 'Hired' : 'Declined'}
-                                       </div>
-                                    )}
-                                 </div>
-                              </div>
-                           ))}
-                        </div>
+                            {selectedJobForApplicants.applicants.map((applicant, i) => (
+                               <div key={applicant.user?._id || i} className="flex-card p-6 sm:p-8 flex flex-col md:flex-row items-center justify-between gap-8 group hover:border-slate-700 transition-colors mb-4 last:mb-0">
+                                  <div className="flex items-center gap-6">
+                                     <div className="w-14 h-14 rounded-xl bg-blue-600 flex items-center justify-center text-white text-xl font-bold shadow-lg shadow-blue-600/10 shrink-0">
+                                        {applicant.user?.name?.[0] || 'A'}
+                                     </div>
+                                     <div className="min-w-0">
+                                        <h4 className="text-lg font-bold text-white tracking-tight mb-1 leading-tight truncate">{applicant.user?.name || "Candidate"}</h4>
+                                        <div className="flex items-center gap-3 flex-meta">
+                                           <span className="text-blue-500 truncate">{applicant.user?.email || "No email provided"}</span>
+                                           <span className="text-slate-800">|</span>
+                                           <span className="flex items-center gap-1 shrink-0"><Star size={10} className="fill-amber-500 text-amber-500" /> {applicant.user?.rating || '4.9'} Rating</span>
+                                        </div>
+                                     </div>
+                                  </div>
+                                  
+                                  <div className="flex items-center gap-3 w-full md:w-auto">
+                                     <button 
+                                        onClick={() => handleUpdateApplicantStatus(selectedJobForApplicants._id, applicant.user?._id, 'accepted')}
+                                        className={`flex-1 md:flex-none !px-8 !py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${
+                                           applicant.status === 'accepted' 
+                                           ? "bg-green-600 text-white shadow-lg shadow-green-600/20" 
+                                           : "bg-slate-900 border border-slate-800 text-slate-500 hover:text-white hover:border-slate-700"
+                                        }`}
+                                     >
+                                        {applicant.status === 'accepted' ? 'Hired' : 'Hire'}
+                                     </button>
+                                     <button 
+                                        onClick={() => handleUpdateApplicantStatus(selectedJobForApplicants._id, applicant.user?._id, 'rejected')}
+                                        className={`flex-1 md:flex-none !px-8 !py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${
+                                           applicant.status === 'rejected' 
+                                           ? "bg-red-600 text-white shadow-lg shadow-red-600/20" 
+                                           : "bg-slate-900 border border-slate-800 text-slate-500 hover:text-white hover:border-slate-700"
+                                        }`}
+                                     >
+                                        {applicant.status === 'rejected' ? 'Declined' : 'Decline'}
+                                     </button>
+                                  </div>
+                               </div>
+                            ))}
+                         </div>
                      )}
                   </div>
                </motion.div>
@@ -718,9 +689,9 @@ const FlexoraDashboard = () => {
       {/* Application Detail Modal (Seeker View) */}
       <AnimatePresence>
          {selectedApplicationDetails && (
-            <div className="fixed inset-0 z-[200] flex items-center justify-center p-6">
-               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} onClick={() => setSelectedApplicationDetails(null)} className="absolute inset-0 bg-slate-950/90 backdrop-blur-sm" />
-               <motion.div initial={{ opacity: 0, scale: 0.97, y: 8 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.97, y: 8 }} transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }} className="relative w-full max-w-xl bg-slate-900 border border-slate-800 rounded-[40px] overflow-hidden shadow-2xl p-10 sm:p-14">
+            <div key="application-detail-overlay" className="fixed inset-0 z-[200] flex items-center justify-center p-6">
+               <motion.div key="detail-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} onClick={() => setSelectedApplicationDetails(null)} className="absolute inset-0 bg-slate-950/90 backdrop-blur-sm" />
+               <motion.div key="detail-modal" initial={{ opacity: 0, scale: 0.97, y: 8 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.97, y: 8 }} transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }} className="relative w-full max-w-xl bg-slate-900 border border-slate-800 rounded-[40px] overflow-hidden shadow-2xl p-10 sm:p-14">
                   <div className="flex justify-between items-start mb-10">
                      <div className={`px-4 py-1.5 rounded-lg flex-meta border ${
                         selectedApplicationDetails.status === 'accepted' 
@@ -767,6 +738,16 @@ const FlexoraDashboard = () => {
             </div>
          )}
       </AnimatePresence>
+      
+      {/* Job Detail Modal (Shared) */}
+      <JobDetailModal
+         job={selectedJobForDetail}
+         isOpen={isDetailModalOpen}
+         onClose={() => setIsDetailModalOpen(false)}
+         onApply={handleApply}
+         isApplying={loadingApplyId === (selectedJobForDetail?._id || selectedJobForDetail?.id)}
+         isProviderView={currentUser?.role === 'job_provider'}
+      />
     </div>
   );
 };

@@ -30,6 +30,7 @@ import SlideButton from "../../components/SlideButton";
 import AuthModal from "../../components/AuthModal";
 import FilterSheet from "../../components/FilterSheet";
 import NotificationDropdown from "../../components/NotificationDropdown";
+import JobDetailModal from "../../components/JobDetailModal";
 import { useAuth } from "../../context/AuthContext";
 
 // ─── Application Success Screen ───────────────────────────────────────────────
@@ -120,124 +121,7 @@ const ApplicationSuccessModal = ({ job, onClose }) => (
   </div>
 );
 
-// ─── Job Detail Modal ─────────────────────────────────────────────────────────
-const JobDetailModal = ({ job, onClose, onApply, isApplying, hasApplied, onSave, isSaved }) => {
-  if (!job) return null;
-
-  return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center p-6">
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.15, ease: "easeOut" }}
-        onClick={onClose}
-        className="absolute inset-0 bg-slate-950/90 backdrop-blur-sm"
-      />
-      <motion.div
-        initial={{ opacity: 0, scale: 0.96, y: 10 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.96, y: 10 }}
-        transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-        className="relative w-full max-w-xl bg-slate-900 border border-slate-800 rounded-[40px] shadow-2xl overflow-hidden max-h-[85vh] flex flex-col"
-      >
-        {/* Modal Header */}
-        <div className="p-10 pb-4">
-          <div className="flex justify-between items-start mb-8">
-            <div className="px-3 py-1 bg-blue-600/10 border border-blue-600/20 text-blue-500 flex-label rounded-lg flex items-center gap-2">
-              {job.category || 'General'}
-            </div>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => onSave(job.id)}
-                className={`w-10 h-10 rounded-xl border flex items-center justify-center transition-all ${isSaved ? 'bg-red-500/10 border-red-500/20 text-red-500' : 'bg-slate-800 border-slate-700 text-slate-500 hover:text-white'}`}
-              >
-                <Heart size={18} fill={isSaved ? 'currentColor' : 'none'} />
-              </button>
-              <button
-                onClick={onClose}
-                className="w-10 h-10 flex items-center justify-center hover:bg-slate-800 rounded-xl text-slate-500 transition-all"
-              >
-                <X size={20} />
-              </button>
-            </div>
-          </div>
-
-          <h2 className="flex-title-sm mb-2">{job.title}</h2>
-          <p className="flex-label text-blue-500 italic mb-8">at {job.company}</p>
-        </div>
-
-        {/* Modal Body */}
-        <div className="flex-1 overflow-y-auto px-10 custom-scrollbar">
-          <div className="grid grid-cols-2 gap-4 mb-10">
-            <div className="flex-card bg-slate-950 p-6 border-dashed">
-              <span className="flex-meta uppercase mb-2 block">Primary Location</span>
-              <div className="text-white font-bold text-sm flex items-center gap-2">
-                <MapPin size={13} className="text-blue-500" /> {job.location}
-              </div>
-            </div>
-            <div className="flex-card bg-slate-950 p-6 border-dashed">
-              <span className="flex-meta uppercase mb-2 block">Compensation</span>
-              <div className="text-white font-black text-lg flex items-center gap-2">
-                <span className="text-blue-500 text-xs font-bold uppercase">INR</span>
-                {String(job.compensation || job.pay || '0').replace('₹', '')}
-              </div>
-            </div>
-          </div>
-
-          {job.description && (
-            <div className="mb-10">
-              <p className="flex-meta uppercase mb-4">Job Description & Requirements</p>
-              <p className="text-slate-400 text-sm leading-relaxed italic font-medium">{job.description}</p>
-            </div>
-          )}
-          
-          <div className="pb-10 grid grid-cols-2 gap-8">
-             <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-slate-800 flex items-center justify-center text-amber-500">
-                   <Star size={16} className="fill-amber-500" />
-                </div>
-                <div>
-                   <p className="text-white font-bold text-sm">{job.rating || '4.8'}</p>
-                   <p className="flex-meta lowercase">Rating</p>
-                </div>
-             </div>
-             <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-slate-800 flex items-center justify-center text-blue-500">
-                   <Clock size={16} />
-                </div>
-                <div>
-                   <p className="text-white font-bold text-sm">~ 2 Days</p>
-                   <p className="flex-meta lowercase">Response</p>
-                </div>
-             </div>
-          </div>
-        </div>
-
-        {/* Modal Footer */}
-        <div className="p-10 pt-6 border-t border-slate-800/50 bg-slate-900/50 backdrop-blur-md">
-          {hasApplied ? (
-            <div className="flex items-center justify-center gap-3 py-4 bg-green-600/5 border border-green-500/20 rounded-2xl">
-              <CheckCircle size={18} className="text-green-500" />
-              <div className="text-left">
-                <p className="flex-label text-green-500">Already applied</p>
-                <p className="flex-meta lowercase">View similar opportunities below</p>
-              </div>
-            </div>
-          ) : (
-            <SlideButton
-              onClick={() => onApply(job)}
-              disabled={isApplying}
-              className="w-full !py-5 shadow-lg shadow-blue-600/20"
-            >
-              {isApplying ? 'Applying...' : 'Apply Now'}
-            </SlideButton>
-          )}
-        </div>
-      </motion.div>
-    </div>
-  );
-};
+// Local JobDetailModal removed in favor of shared component
 
 // ─── Main Jobs Page ───────────────────────────────────────────────────────────
 const Jobs = () => {
@@ -299,43 +183,12 @@ const Jobs = () => {
       if (data && data.length > 0) {
         setJobs(data);
       } else {
-        // Realism: High-quality fallback data if DB is empty
-        setJobs([
-          {
-            _id: "fb1",
-            title: "Senior Event Coordinator",
-            description: "Lead the execution of high-end corporate events and weddings in Kochi. Requires 2+ years experience.",
-            location: "Kochi, Kerala",
-            compensation: "₹2,500/day",
-            category: "Event Crew",
-            provider: { name: "Lumina Events Kochi" },
-            createdAt: new Date().toISOString()
-          },
-          {
-            _id: "fb2",
-            title: "Technical Support Associate",
-            description: "Handle tier-1 technical queries for our international clients. Night shifts available.",
-            location: "Trivandrum (Technopark)",
-            compensation: "₹1,800/shift",
-            category: "Technical Support",
-            provider: { name: "CloudScale Systems" },
-            createdAt: new Date().toISOString()
-          },
-          {
-            _id: "fb3",
-            title: "Delivery Operations Lead",
-            description: "Coordinate last-mile delivery partners for the Calicut region. Focus on efficiency and safety.",
-            location: "Calicut",
-            compensation: "₹35,000/month",
-            category: "Logistics",
-            provider: { name: "SwiftLogistics India" },
-            createdAt: new Date().toISOString()
-          }
-        ]);
+        setJobs([]);
       }
     } catch (error) {
       console.error("Fetch error:", error);
-      toast.error('Connection issue. Showing recent listings.');
+      toast.error('Connection issue. Refreshing list...');
+      setJobs([]);
     } finally {
       setIsLoading(false);
     }
@@ -637,12 +490,12 @@ const Jobs = () => {
         {selectedJob && (
           <JobDetailModal
             job={selectedJob}
+            isOpen={!!selectedJob}
             onClose={() => setSelectedJob(null)}
             onApply={handleApply}
             isApplying={loadingApplyId === (selectedJob.id || selectedJob._id)}
-            hasApplied={appliedJobs.has(selectedJob.id || selectedJob._id)}
+            isSaved={savedJobs.has(selectedJob.id || selectedJob._id)}
             onSave={toggleSaveJob}
-            isSaved={savedJobs.has(selectedJob.id)}
           />
         )}
       </AnimatePresence>
