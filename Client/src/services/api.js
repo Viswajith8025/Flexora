@@ -1,6 +1,12 @@
 import axios from 'axios';
 
-const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+let baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+
+// Auto-fix if /api is missing in deployment
+if (baseUrl && !baseUrl.includes('/api') && baseUrl.includes('onrender.com')) {
+  baseUrl = baseUrl.endsWith('/') ? `${baseUrl}api` : `${baseUrl}/api`;
+}
+
 export const BACKEND_URL = baseUrl.replace('/api', '');
 
 const api = axios.create({

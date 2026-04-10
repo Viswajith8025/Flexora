@@ -25,17 +25,21 @@ const app = express();
 const server = http.createServer(app);
 
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
+const allowedOrigins = [
+  FRONTEND_URL,
+  FRONTEND_URL.endsWith('/') ? FRONTEND_URL.slice(0, -1) : FRONTEND_URL + '/'
+].filter(Boolean);
 
 const io = new Server(server, {
   cors: {
-    origin: FRONTEND_URL, 
+    origin: allowedOrigins,
     credentials: true,
   },
 });
 
 // Middleware
 app.use(cors({
-  origin: FRONTEND_URL,
+  origin: allowedOrigins,
   credentials: true
 }));
 app.use(express.json());
