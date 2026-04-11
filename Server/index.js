@@ -32,7 +32,8 @@ const server = http.createServer(app);
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 const allowedOrigins = [
   FRONTEND_URL,
-  FRONTEND_URL.endsWith('/') ? FRONTEND_URL.slice(0, -1) : FRONTEND_URL + '/'
+  FRONTEND_URL.endsWith('/') ? FRONTEND_URL.slice(0, -1) : FRONTEND_URL + '/',
+  "https://flexora-wheat.vercel.app"
 ].filter(Boolean);
 
 const io = new Server(server, {
