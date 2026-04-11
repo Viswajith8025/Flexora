@@ -28,3 +28,17 @@ export const verifyAdmin = (req, res, next) => {
   }
   next();
 };
+
+export const isProvider = (req, res, next) => {
+  if (req.user.role !== "job_provider" && req.user.role !== "admin") {
+    return res.status(403).json({ msg: "Access denied. Provider role required." });
+  }
+  next();
+};
+
+export const isSeeker = (req, res, next) => {
+  if (req.user.role !== "job_seeker" && req.user.role !== "admin") {
+    return res.status(403).json({ msg: "Access denied. Seeker role required." });
+  }
+  next();
+};

@@ -17,8 +17,15 @@ const UserAvatar = ({ user, className = "w-10 h-10", textClassName = "text-xs" }
 
   const getImageUrl = () => {
     if (!user.avatar) return null;
+    
+    // ☁️ Handle Cloudinary URLs (Starts with http from the cloud)
     if (user.avatar.startsWith('http')) return user.avatar;
-    if (user.avatar.startsWith('/uploads')) return `${BACKEND_URL}${user.avatar}`;
+    
+    // 🏺 Handle Legacy local uploads (Prepended with backend URL)
+    if (user.avatar.startsWith('/uploads')) {
+      return `${BACKEND_URL}${user.avatar}`;
+    }
+    
     return user.avatar;
   };
 

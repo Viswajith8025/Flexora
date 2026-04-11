@@ -12,6 +12,7 @@ export const getStats = async (req, res) => {
       flaggedJobs: await Job.countDocuments({ isFlagged: true }),
       seekerCount: await User.countDocuments({ role: "job_seeker" }),
       providerCount: await User.countDocuments({ role: "job_provider" }),
+      adminCount: await User.countDocuments({ role: "admin" }),
       newUsersLastWeek: await User.countDocuments({
         createdAt: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) }
       })
@@ -97,5 +98,58 @@ export const approveJob = async (req, res) => {
     res.json({ msg: "Job approved successfully", job });
   } catch (err) {
     res.status(500).json({ msg: "Error approving job", error: err.message });
+  }
+};
+
+export const rejectJob = async (req, res) => {
+  try {
+    const job = await Job.findById(req.params.id);
+    if (!job) return res.status(404).json({ msg: "Job not found" });
+
+    // 🕵️ CREATE AUDIT LOG (Internal Transparency)
+    await AuditLog.create({
+        adminId: req.user.id,
+        action: 'REJECT_JOB',
+        resourceType: 'Job',
+        resourceId: job._id,
+        details: { 
+          title: job.title,
+          providerId: job.provider,
+          action: "Job rejected/deleted from approval queue" 
+        },
+        metadata: {
+          ip: req.ip,
+          userAgent: req.headers["user-agent"]
+        }
+    });
+
+    await Job.findByIdAndDelete(req.params.id);
+    res.json({ msg: "Job rejected and removed successfully" });
+  } catch (err) {
+    res.status(500).json({ msg: "Error rejecting job", error: err.message });
+  }
+};
+
+export const getAllAdminJobs = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20; 
+    const skip = (page - 1) * limit;
+
+    const totalJobs = await Job.countDocuments();
+    const jobs = await Job.find()
+      .populate("provider", "name email role")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    res.json({
+      jobs,
+      currentPage: page,
+      totalPages: Math.ceil(totalJobs / limit),
+      totalJobs
+    });
+  } catch (err) {
+    res.status(500).json({ msg: "Error fetching platform jobs", error: err.message });
   }
 };

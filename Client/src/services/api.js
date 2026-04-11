@@ -79,8 +79,8 @@ export default {
   getAllUsers: () => api.get('admin/users'),           // All seekers + providers with activity
   getUsers: () => api.get('admin/users'),
   deleteUser: (id) => api.delete(`admin/users/${id}`),
-  getAllAdminJobs: () => api.get('admin/all-jobs'),    // Every job on the platform
-  getAdminJobs: () => api.get('admin/all-jobs'),
+  getAllAdminJobs: (params) => api.get('admin/all-jobs', { params }),    // Every job on the platform
+  getAdminJobs: (params) => api.get('admin/all-jobs', { params }),
   deleteJob: (id) => api.delete(`admin/jobs/${id}`),
   getPendingJobs: () => api.get('admin/jobs/pending'),
   approveJob: (id) => api.patch(`admin/jobs/${id}/approve`),

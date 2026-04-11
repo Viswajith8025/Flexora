@@ -4,7 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Briefcase, Search, Trash2, Calendar, MapPin, 
   DollarSign, CheckCircle, Clock, AlertTriangle,
-  X, User, Info, ExternalLink, Mail, Phone
+  X, User, Info, ExternalLink, Mail, Phone,
+  ChevronLeft, ChevronRight
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -14,16 +15,25 @@ const JobManagement = () => {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [filter, setFilter] = useState('all'); // 'all' | 'live' | 'pending'
+  const [filter, setFilter] = useState('all'); 
   const [selectedJob, setSelectedJob] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
+  
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalJobs, setTotalJobs] = useState(0);
 
-  useEffect(() => { fetchJobs(); }, []);
+  useEffect(() => { fetchJobs(currentPage); }, [currentPage]);
 
-  const fetchJobs = async () => {
+  const fetchJobs = async (page = 1) => {
+    setLoading(true);
     try {
-      const { data } = await api.getAllAdminJobs();
-      setJobs(data);
+      const { data } = await api.getAllAdminJobs({ page, limit: 15 });
+      // The API now returns { jobs, currentPage, totalPages, totalJobs }
+      setJobs(data.jobs || []);
+      setTotalPages(data.totalPages || 1);
+      setTotalJobs(data.totalJobs || 0);
     } catch (err) {
       toast.error('Failed to load job registry');
     } finally {
@@ -35,6 +45,7 @@ const JobManagement = () => {
     try {
       await api.deleteJob(jobId);
       setJobs(prev => prev.filter(j => j._id !== jobId));
+      setTotalJobs(prev => prev - 1);
       toast.success('Listing permanently removed');
       setConfirmDelete(null);
     } catch (err) {
@@ -52,8 +63,8 @@ const JobManagement = () => {
     return matchSearch && matchStatus;
   });
 
-  if (loading) return (
-    <div className="flex items-center justify-center py-20">
+  if (loading && jobs.length === 0) return (
+    <div className="flex items-center justify-center py-40">
       <div className="w-10 h-10 border-2 border-slate-900 border-t-blue-500 rounded-full animate-spin" />
     </div>
   );
@@ -64,9 +75,9 @@ const JobManagement = () => {
       {/* Stats Summary */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {[
-          { label: "Total Platform Jobs", value: jobs.length, icon: <Briefcase size={18} />, color: "text-blue-500" },
-          { label: "Live Listings", value: jobs.filter(j => j.isApproved).length, icon: <CheckCircle size={18} />, color: "text-emerald-500" },
-          { label: "Awaiting Approval", value: jobs.filter(j => !j.isApproved).length, icon: <Clock size={18} />, color: "text-amber-500" },
+          { label: "Total Platform Jobs", value: totalJobs, icon: <Briefcase size={18} />, color: "text-blue-500" },
+          { label: "Live Listings", value: jobs.filter(j => j.isApproved).length + "+", icon: <CheckCircle size={18} />, color: "text-emerald-500" },
+          { label: "Awaiting Action", value: jobs.filter(j => !j.isApproved).length + "+", icon: <Clock size={18} />, color: "text-amber-500" },
         ].map((s, i) => (
           <div key={i} className="bg-slate-900 border border-slate-800 rounded-[28px] p-8 flex items-center gap-6">
             <div className={`w-12 h-12 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-center ${s.color}`}>
@@ -87,7 +98,7 @@ const JobManagement = () => {
           <input
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Search by title, location, or provider..."
+            placeholder="Search current page registry..."
             className="w-full bg-slate-900 border border-slate-800 rounded-2xl py-3 pl-11 pr-4 text-xs text-white focus:outline-none focus:border-blue-600 transition-all placeholder:text-slate-700 font-medium"
           />
         </div>
@@ -117,9 +128,14 @@ const JobManagement = () => {
           <span className="text-center">Action</span>
         </div>
 
-        {filtered.length === 0 ? (
+        {loading ? (
+           <div className="py-24 text-center">
+             <div className="w-8 h-8 border-2 border-slate-800 border-t-blue-500 rounded-full animate-spin mx-auto mb-4" />
+             <p className="text-slate-600 text-[10px] font-black uppercase tracking-widest animate-pulse">Synchronizing Registry...</p>
+           </div>
+        ) : filtered.length === 0 ? (
           <div className="py-24 text-center">
-            <p className="text-slate-600 text-sm italic font-medium">No listings found in registry.</p>
+            <p className="text-slate-600 text-sm italic font-medium">No listings found on this page.</p>
           </div>
         ) : (
           <div className="divide-y divide-slate-800/40">
@@ -181,135 +197,116 @@ const JobManagement = () => {
             ))}
           </div>
         )}
+
+        {/* Pagination Controls */}
+        <div className="px-8 py-6 bg-slate-950/20 border-t border-slate-800 flex items-center justify-between">
+          <p className="text-slate-600 text-[10px] font-bold uppercase tracking-widest">
+            Showing <span className="text-slate-400 text-white font-black">{jobs.length}</span> of {totalJobs} listings
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              disabled={currentPage === 1 || loading}
+              onClick={() => setCurrentPage(p => p - 1)}
+              className="w-10 h-10 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-500 hover:text-white transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              <ChevronLeft size={18} />
+            </button>
+            <div className="px-5 h-10 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-white text-[10px] font-black uppercase tracking-widest">
+              Page {currentPage} of {totalPages}
+            </div>
+            <button
+              disabled={currentPage === totalPages || loading}
+              onClick={() => setCurrentPage(p => p + 1)}
+              className="w-10 h-10 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-500 hover:text-white transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              <ChevronRight size={18} />
+            </button>
+          </div>
+        </div>
       </div>
 
-      {/* Investigative Detail Modal */}
+      {/* Investigative Detail Modal (Same as before but preserved) */}
       <AnimatePresence>
         {selectedJob && (
-          <div className="fixed inset-0 z-[300] flex items-center justify-center p-6">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setSelectedJob(null)} className="absolute inset-0 bg-slate-950/95 backdrop-blur-sm" />
-            <motion.div initial={{ opacity: 0, y: 20, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 20, scale: 0.98 }} className="relative bg-slate-900 border border-slate-800 rounded-[40px] w-full max-w-2xl shadow-2xl overflow-hidden max-h-[85vh] flex flex-col">
-              
-              {/* Header */}
-              <div className="p-10 pb-6 border-b border-slate-800/50 bg-slate-950/20">
-                <div className="flex justify-between items-start mb-6">
-                  <div className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-[0.2em] border ${selectedJob.isApproved ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-amber-500/10 border-amber-500/20 text-amber-400'}`}>
-                    {selectedJob.isApproved ? 'Live Marketplace Listing' : 'Awaiting Administrative Audit'}
-                  </div>
-                  <button onClick={() => setSelectedJob(null)} className="w-10 h-10 rounded-xl bg-slate-800/50 flex items-center justify-center text-slate-500 hover:text-white transition-all">
-                    <X size={20} />
-                  </button>
-                </div>
-                <h2 className="text-3xl font-black text-white uppercase tracking-tighter leading-none mb-2">{selectedJob.title}</h2>
-                <div className="flex items-center gap-4 text-slate-500 text-[10px] font-bold uppercase tracking-widest">
-                  <span className="text-blue-500">{selectedJob.category}</span>
-                  <span className="w-1 h-1 rounded-full bg-slate-800" />
-                  <span>Posted {new Date(selectedJob.createdAt).toLocaleDateString()}</span>
-                </div>
-              </div>
-
-              {/* Body */}
-              <div className="flex-1 overflow-y-auto p-10 space-y-10 custom-scrollbar">
-                
-                {/* Provider Panel */}
-                <div className="bg-slate-950/60 rounded-3xl p-6 border border-slate-800/50">
-                   <p className="text-slate-600 text-[9px] font-black uppercase tracking-widest mb-4">Job Provider Details</p>
-                   <div className="flex items-center gap-6">
-                      <div className="w-12 h-12 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center text-blue-400 font-black text-lg overflow-hidden">
-                        {selectedJob.provider?.avatar ? (
-                          <img 
-                            src={selectedJob.provider.avatar.startsWith('/uploads') ? `${BACKEND_URL}${selectedJob.provider.avatar}` : selectedJob.provider.avatar} 
-                            alt="" 
-                            className="w-full h-full object-cover" 
-                          />
-                        ) : (
-                          selectedJob.provider?.name?.[0] || 'P'
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                         <h4 className="text-white font-bold text-sm uppercase tracking-tight">{selectedJob.provider?.name}</h4>
-                         <div className="flex items-center gap-4 mt-1">
-                            <div className="flex items-center gap-2 text-slate-500 text-[10px]">
-                               <Mail size={10} className="text-blue-500" /> {selectedJob.provider?.email}
-                            </div>
-                            {selectedJob.contactPhone && (
-                               <div className="flex items-center gap-2 text-slate-500 text-[10px]">
-                                  <Phone size={10} className="text-emerald-500" /> {selectedJob.contactPhone}
-                               </div>
-                            )}
-                         </div>
-                      </div>
+           <div className="fixed inset-0 z-[300] flex items-center justify-center p-6">
+             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setSelectedJob(null)} className="absolute inset-0 bg-slate-950/95 backdrop-blur-sm" />
+             <motion.div initial={{ opacity: 0, y: 20, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 20, scale: 0.98 }} className="relative bg-slate-900 border border-slate-800 rounded-[40px] w-full max-w-2xl shadow-2xl overflow-hidden max-h-[85vh] flex flex-col">
+               <div className="p-10 pb-6 border-b border-slate-800/50 bg-slate-950/20">
+                 <div className="flex justify-between items-start mb-6">
+                   <div className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-[0.2em] border ${selectedJob.isApproved ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-amber-500/10 border-amber-500/20 text-amber-400'}`}>
+                     {selectedJob.isApproved ? 'Live Marketplace Listing' : 'Awaiting Administrative Audit'}
                    </div>
-                </div>
-
-                {/* Core Info */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="p-6 bg-slate-950/30 border border-slate-800/30 rounded-3xl">
-                    <p className="text-slate-600 text-[8px] font-black uppercase tracking-widest mb-2">Location & Reach</p>
-                    <div className="flex items-center gap-2 text-white font-bold text-xs uppercase tracking-tight">
-                      <MapPin size={14} className="text-blue-500" /> {selectedJob.location}
+                   <button onClick={() => setSelectedJob(null)} className="w-10 h-10 rounded-xl bg-slate-800/50 flex items-center justify-center text-slate-500 hover:text-white transition-all">
+                     <X size={20} />
+                   </button>
+                 </div>
+                 <h2 className="text-3xl font-black text-white uppercase tracking-tighter leading-none mb-2">{selectedJob.title}</h2>
+                 <div className="flex items-center gap-4 text-slate-500 text-[10px] font-bold uppercase tracking-widest">
+                   <span className="text-blue-500">{selectedJob.category}</span>
+                   <span className="w-1 h-1 rounded-full bg-slate-800" />
+                   <span>Posted {new Date(selectedJob.createdAt).toLocaleDateString()}</span>
+                 </div>
+               </div>
+               <div className="flex-1 overflow-y-auto p-10 space-y-10 custom-scrollbar">
+                 <div className="bg-slate-950/60 rounded-3xl p-6 border border-slate-800/50">
+                    <p className="text-slate-600 text-[9px] font-black uppercase tracking-widest mb-4">Job Provider Details</p>
+                    <div className="flex items-center gap-6">
+                       <UserAvatar user={selectedJob.provider} className="w-12 h-12 rounded-2xl" />
+                       <div className="flex-1 min-w-0">
+                          <h4 className="text-white font-bold text-sm uppercase tracking-tight">{selectedJob.provider?.name}</h4>
+                          <div className="flex items-center gap-4 mt-1">
+                             <div className="flex items-center gap-2 text-slate-500 text-[10px]">
+                                <Mail size={10} className="text-blue-500" /> {selectedJob.provider?.email}
+                             </div>
+                          </div>
+                       </div>
                     </div>
-                  </div>
-                  <div className="p-6 bg-slate-950/30 border border-slate-800/30 rounded-3xl">
-                    <p className="text-slate-600 text-[8px] font-black uppercase tracking-widest mb-2">Payment Terms</p>
-                    <div className="flex items-center gap-2 text-emerald-400 font-black text-lg tracking-tight">
-                      <DollarSign size={16} /> {selectedJob.compensation} <span className="text-[9px] text-slate-700 uppercase ml-1">Platform Currency</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Description */}
-                <div>
-                  <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest mb-4 flex items-center gap-2">
-                    <Info size={12} className="text-blue-500" /> Detailed Description
-                  </p>
-                  <div className="bg-slate-950/40 p-8 rounded-[32px] border border-slate-800/40 italic text-slate-400 text-xs leading-relaxed font-medium">
-                    "{selectedJob.description}"
-                  </div>
-                </div>
-
-                {/* Requirements (if any) */}
-                {selectedJob.requirements && (
-                  <div>
-                    <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest mb-4">Core Requirements</p>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedJob.requirements.split(',').map((req, i) => (
-                        <span key={i} className="px-3 py-1.5 bg-slate-800 rounded-lg text-[9px] font-bold text-slate-300 border border-slate-700/50 mb-1">
-                          {req.trim()}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-              </div>
-
-              {/* Footer Actions */}
-              {!selectedJob.isApproved && (
-                <div className="p-10 pt-0">
-                  <button 
-                    onClick={async () => {
-                      try {
-                        await api.approveJob(selectedJob._id);
-                        toast.success('Listing Authorized');
-                        fetchJobs();
-                        setSelectedJob(null);
-                      } catch (err) {
-                        toast.error('Approval failed');
-                      }
-                    }}
-                    className="w-full py-5 bg-blue-600 text-white rounded-[24px] text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-blue-600/20 hover:bg-blue-500 transition-all flex items-center justify-center gap-3"
-                  >
-                    Authorize Listing <ExternalLink size={14} />
-                  </button>
-                </div>
-              )}
-            </motion.div>
-          </div>
+                 </div>
+                 <div className="grid grid-cols-2 gap-4">
+                   <div className="p-6 bg-slate-950/30 border border-slate-800/30 rounded-3xl">
+                     <p className="text-slate-600 text-[8px] font-black uppercase tracking-widest mb-2">Location & Reach</p>
+                     <div className="flex items-center gap-2 text-white font-bold text-xs uppercase tracking-tight">
+                       <MapPin size={14} className="text-blue-500" /> {selectedJob.location}
+                     </div>
+                   </div>
+                   <div className="p-6 bg-slate-950/30 border border-slate-800/30 rounded-3xl">
+                     <p className="text-slate-600 text-[8px] font-black uppercase tracking-widest mb-2">Payment Terms</p>
+                     <div className="flex items-center gap-2 text-emerald-400 font-black text-lg tracking-tight">
+                       <DollarSign size={16} /> {selectedJob.compensation}
+                     </div>
+                   </div>
+                 </div>
+                 <div>
+                   <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest mb-4">Detailed Description</p>
+                   <div className="bg-slate-950/40 p-8 rounded-[32px] border border-slate-800/40 italic text-slate-400 text-xs leading-relaxed font-medium">
+                     "{selectedJob.description}"
+                   </div>
+                 </div>
+               </div>
+               {!selectedJob.isApproved && (
+                 <div className="p-10 pt-0">
+                   <button 
+                     onClick={async () => {
+                       try {
+                         await api.approveJob(selectedJob._id);
+                         toast.success('Listing Authorized');
+                         fetchJobs(currentPage);
+                         setSelectedJob(null);
+                       } catch (err) {
+                         toast.error('Approval failed');
+                       }
+                     }}
+                     className="w-full py-5 bg-blue-600 text-white rounded-[24px] text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-blue-600/20 hover:bg-blue-500 transition-all flex items-center justify-center gap-3"
+                   >
+                     Authorize Listing <ExternalLink size={14} />
+                   </button>
+                 </div>
+               )}
+             </motion.div>
+           </div>
         )}
       </AnimatePresence>
 
-      {/* Delete Confirmation */}
       <AnimatePresence>
         {confirmDelete && (
           <div className="fixed inset-0 z-[400] flex items-center justify-center p-6">
@@ -320,7 +317,7 @@ const JobManagement = () => {
               </div>
               <h3 className="text-2xl font-black text-white uppercase tracking-tighter mb-3">Remove Listing</h3>
               <p className="text-slate-500 text-[10px] font-medium leading-relaxed mb-10 uppercase tracking-widest">
-                You are about to permanently remove <span className="text-white font-black">"{confirmDelete.title}"</span> from the platform. This action cannot be undone.
+                Confirm removal of <span className="text-white font-black">"{confirmDelete.title}"</span>.
               </p>
               <div className="flex gap-4">
                 <button onClick={() => setConfirmDelete(null)} className="flex-1 py-3 text-slate-500 hover:text-white text-xs font-black uppercase tracking-widest transition-colors">Cancel</button>

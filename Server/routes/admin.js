@@ -1,5 +1,5 @@
 import express from "express";
-import { getStats, getReportedJobs, flagJob, getPendingJobs, approveJob } from "../controllers/admincontroller.js";
+import { getStats, getReportedJobs, flagJob, getPendingJobs, approveJob, getAllAdminJobs, rejectJob } from "../controllers/admincontroller.js";
 import { authenticate } from "../middleware/authMiddleware.js";
 import User from "../models/user.js";
 import Job from "../models/job.js";
@@ -23,6 +23,7 @@ router.get("/ping", (req, res) => res.json({ msg: "Admin Hub Connected ✅" }));
 router.get("/stats", getStats);
 
 // ── User Oversight ──────────────────────────────────────────────────
+// Fetch all platform users (Seekers and Providers)
 router.get("/users", async (req, res) => {
   try {
     const users = await User.find({ role: { $ne: 'admin' } })
@@ -54,27 +55,11 @@ router.delete("/users/:id", async (req, res) => {
 });
 
 // ── Job Oversight ───────────────────────────────────────────────────
-// Get ALL platform jobs (approved + pending)
-router.get("/all-jobs", async (req, res) => {
-  try {
-    const jobs = await Job.find()
-      .populate("provider", "name email role")
-      .sort({ createdAt: -1 });
-    res.json(jobs);
-  } catch (err) {
-    res.status(500).json({ msg: "Error fetching jobs", error: err.message });
-  }
-});
+// Get ALL platform jobs (approved + pending) with server-side pagination
+router.get("/all-jobs", getAllAdminJobs);
 
-// Delete any job
-router.delete("/jobs/:id", async (req, res) => {
-  try {
-    await Job.findByIdAndDelete(req.params.id);
-    res.json({ msg: "Job deleted successfully" });
-  } catch (err) {
-    res.status(500).json({ msg: "Error deleting job", error: err.message });
-  }
-});
+// Delete/Reject any job listing
+router.delete("/jobs/:id", rejectJob);
 
 // ── Approval Queue ──────────────────────────────────────────────────
 router.get("/jobs/pending", getPendingJobs);

@@ -92,7 +92,7 @@ router.patch("/update-profile", authenticate, upload.single('avatar'), async (re
     if (skills !== undefined) updateData.skills = skills;
 
     if (req.file) {
-      updateData.avatar = `/uploads/${req.file.filename}`;
+      updateData.avatar = req.file.path; // Cloudinary URL
     }
 
     console.log("💾 ATTEMPTING DB SAVE WITH:", updateData);

@@ -1,18 +1,18 @@
 // backend/routes/job.js
 import express from "express";
 import { createJob, getJobs, reportJob, applyToJob, getMyApplications, toggleSaveJob, getSavedJobs, getProviderJobs, updateApplicationStatus, getJobApplicants } from "../controllers/jobcontroller.js";
-import { authenticate } from "../middleware/authMiddleware.js";
+import { authenticate, isProvider } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
  
-router.post("/", authenticate, createJob);
+router.post("/", authenticate, isProvider, createJob);
 router.get("/my-applications", authenticate, getMyApplications);
 router.get("/saved", authenticate, getSavedJobs);
 router.post("/save/:id", authenticate, toggleSaveJob);
-router.get("/my-jobs", authenticate, getProviderJobs);
-router.get("/provider/jobs", authenticate, getProviderJobs);
-router.get("/:id/applicants", authenticate, getJobApplicants);
-router.patch("/:jobId/applicants/:userId/status", authenticate, updateApplicationStatus);
+router.get("/my-jobs", authenticate, isProvider, getProviderJobs);
+router.get("/provider/jobs", authenticate, isProvider, getProviderJobs);
+router.get("/:id/applicants", authenticate, isProvider, getJobApplicants);
+router.patch("/:jobId/applicants/:userId/status", authenticate, isProvider, updateApplicationStatus);
 router.put("/application/status", authenticate, updateApplicationStatus); // Keep for legacy compat
 router.get("/ping", (req, res) => res.json({ msg: "Tactical Job Route Operational" }));
 router.get("/stats", async (req, res) => {

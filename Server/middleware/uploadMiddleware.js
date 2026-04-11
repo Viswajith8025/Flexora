@@ -1,35 +1,11 @@
 import multer from 'multer';
-import path from 'path';
+import { storage } from '../config/cloudinaryConfig.js';
 
-// Set storage engine
-const storage = multer.diskStorage({
-  destination: './uploads/',
-  filename: (req, file, cb) => {
-    // Unique name: user-id-timestamp.ext
-    cb(null, `${req.user.id}-${Date.now()}${path.extname(file.originalname)}`);
-  }
-});
-
-// Check file type
-function checkFileType(file, cb) {
-  const filetypes = /jpeg|jpg|png|webp/;
-  const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-  const mimetype = filetypes.test(file.mimetype);
-
-  if (mimetype && extname) {
-    return cb(null, true);
-  } else {
-    cb('Error: Images Only (JPEG, JPG, PNG, WEBP)!');
-  }
-}
-
-// Init upload
+// Init upload with Cloudinary Storage
+// This replaces the old local diskStorage which was ephemeral on Render.
 const upload = multer({
   storage: storage,
   limits: { fileSize: 5000000 }, // 5MB limit
-  fileFilter: (req, file, cb) => {
-    checkFileType(file, cb);
-  }
 });
 
 export default upload;

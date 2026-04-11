@@ -13,7 +13,8 @@ import {
   Info,
   Shield,
   ArrowRight,
-  Heart
+  Heart,
+  XCircle
 } from 'lucide-react';
 import { BACKEND_URL } from '../services/api';
 import SlideButton from './SlideButton';
@@ -28,6 +29,8 @@ const JobDetailModal = ({
   isApplying, 
   isProviderView = false, 
   isAdminView = false,
+  onApprove,
+  onReject,
   onSave,
   isSaved
 }) => {
@@ -153,25 +156,6 @@ const JobDetailModal = ({
                            </div>
                         </section>
                      )}
-
-                     {/* Schedule Details */}
-                     {(job.startDate || job.endDate) && (
-                        <section className="space-y-4">
-                           <h3 className="flex-label text-white uppercase flex items-center gap-2">
-                              <Calendar size={14} className="text-blue-500" /> Operational Schedule
-                           </h3>
-                           <div className="flex flex-col sm:flex-row gap-8 bg-slate-950/30 p-6 rounded-2xl border border-slate-900">
-                              <div className="flex-1 space-y-1">
-                                 <p className="flex-meta uppercase">Engagement Starts</p>
-                                 <p className="text-sm font-bold text-white uppercase tracking-tight">{formattedDate(job.startDate || job.date)}</p>
-                              </div>
-                              <div className="flex-1 space-y-1">
-                                 <p className="flex-meta uppercase">Engagement Ends</p>
-                                 <p className="text-sm font-bold text-white uppercase tracking-tight">{formattedDate(job.endDate) || 'Flexible Completion'}</p>
-                              </div>
-                           </div>
-                        </section>
-                     )}
                   </div>
 
                   {/* Right Column: Provider Info & CTAs */}
@@ -193,7 +177,6 @@ const JobDetailModal = ({
                            </div>
                         </div>
                         
-                        {/* Sensitive Info Masked for Seekers unless applying */}
                         <div className="space-y-4 pt-6 border-t border-slate-800">
                            <div className="flex items-center gap-3">
                               <Mail size={14} className="text-slate-700" />
@@ -219,34 +202,40 @@ const JobDetailModal = ({
                         )}
                      </div>
 
-                     {/* Action Card */}
-                     {!isProviderView && !isAdminView && (
-                        <div className="flex-card p-8 bg-blue-600/5 border-blue-600/20">
-                           <h4 className="flex-label text-white mb-4">Start Application</h4>
-                           <p className="flex-meta mb-8 leading-relaxed">
-                              Interested in this role? Submit your profile now. The employer will review your rating and experience.
-                           </p>
-                           <SlideButton 
-                              onClick={() => onApply(job)}
-                              disabled={isApplying}
-                              className="w-full !py-4"
-                           >
-                              {isApplying ? "Submitting..." : "Apply Instantly"}
-                           </SlideButton>
-                        </div>
-                     )}
-
                      {isAdminView && (
-                        <div className="flex-card p-8 bg-amber-600/5 border-amber-600/20">
-                          <h4 className="flex-label text-amber-500 mb-4">Admin Oversight</h4>
-                          <p className="flex-meta mb-8 italic">Review the requirements and schedule above before authorizing this listing.</p>
-                          <div className="space-y-2">
+                        <div className="flex-card p-8 bg-slate-950/30 border-slate-800/40">
+                          <h4 className="flex-label text-slate-500 mb-6 uppercase tracking-[0.2em] font-black">Audit Controls</h4>
+                          <div className="space-y-3">
+                             {onApprove && !job.isApproved && (
+                                <button 
+                                  onClick={() => {
+                                    onApprove(job._id || job.id);
+                                    onClose();
+                                  }}
+                                  className="w-full py-4 bg-emerald-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-500 transition-all shadow-lg shadow-emerald-500/10 flex items-center justify-center gap-2"
+                                >
+                                  Authorize Listing <CheckCircle size={14} />
+                                </button>
+                             )}
+                             {onReject && (
+                                <button 
+                                  onClick={() => {
+                                    onReject(job._id || job.id);
+                                    onClose();
+                                  }}
+                                  className="w-full py-4 bg-slate-900 border border-slate-800 text-slate-500 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/30 transition-all flex items-center justify-center gap-2"
+                                >
+                                  Reject Listing <XCircle size={14} />
+                                </button>
+                             )}
+                          </div>
+                          <div className="mt-6 space-y-2 pt-6 border-t border-slate-800/50">
                              <div className="flex justify-between flex-meta">
                                 <span>Risk Level</span>
                                 <span className="text-emerald-500 font-black">Low</span>
                              </div>
                              <div className="flex justify-between flex-meta">
-                                <span>Provider ID</span>
+                                <span>Provider UID</span>
                                 <span className="text-white font-bold">{job.provider?._id?.slice(-8) || "N/A"}</span>
                              </div>
                           </div>
