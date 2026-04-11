@@ -1,7 +1,10 @@
-// Server/controllers/notificationController.js
 import Notification from "../models/notification.js";
+import User from "../models/user.js";
+import Job from "../models/job.js";
+import { sendEmailAlert } from "../services/emailService.js";
 
 export const getNotifications = async (req, res) => {
+// ... existing code ...
   try {
     const notifications = await Notification.find({ recipient: req.user.id })
       .sort({ createdAt: -1 })
@@ -50,6 +53,32 @@ export const createNotification = async ({ recipient, sender, title, message, ty
       jobId
     });
     await notification.save();
+
+    // Professional Email Trigger (Background)
+    (async () => {
+      try {
+        const [targetUser, sourceUser, job] = await Promise.all([
+           User.findById(recipient).select("name email"),
+           sender ? User.findById(sender).select("name") : null,
+           jobId ? Job.findById(jobId).select("title applicants") : null
+        ]);
+
+        if (!targetUser?.email) return;
+
+        if (type === 'application_submitted' || type === 'status_update') {
+           const emailData = {
+              jobTitle: job?.title || "Flexora Opportunity",
+              seekerName: sourceUser?.name || "A candidate",
+              status: type === 'status_update' ? (job?.applicants.find(a => a.user.toString() === recipient.toString())?.status || 'updated') : undefined
+           };
+           
+           await sendEmailAlert(type, targetUser, emailData);
+        }
+      } catch (err) {
+        console.error("📧 Background email alert failed:", err.message);
+      }
+    })();
+
     return notification;
   } catch (err) {
     console.error("Failed to create notification:", err);

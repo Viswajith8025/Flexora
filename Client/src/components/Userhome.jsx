@@ -50,6 +50,7 @@ import {
 import logo from '../assets/logooo.png';
 import SlideButton from './SlideButton';
 import NotificationDropdown from './NotificationDropdown';
+import UserAvatar from './UserAvatar';
 
 // ─── Application Success Screen ───────────────────────────────────────────────
 const ApplicationSuccessModal = ({ job, onClose }) => (

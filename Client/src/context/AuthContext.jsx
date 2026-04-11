@@ -22,7 +22,7 @@ export const AuthProvider = ({ children }) => {
     setIsLoading(false);
   }, [token]);
 
-  // Helper to ensure consistent role naming
+  // Helper to ensure consistent role naming and identity persistence
   const normalizeUser = (userData) => {
     if (!userData) return null;
     let normalizedRole = userData.role;
@@ -36,9 +36,18 @@ export const AuthProvider = ({ children }) => {
       normalizedRole = 'admin';
     }
 
+    // High-fidelity initials generator for premium fallbacks
+    const getInitials = (name) => {
+      if (!name) return "?";
+      const parts = name.split(" ");
+      if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+      return name.slice(0, 2).toUpperCase();
+    };
+
     return {
       ...userData,
-      role: normalizedRole
+      role: normalizedRole,
+      initials: getInitials(userData.name)
     };
   };
 
@@ -68,8 +77,16 @@ export const AuthProvider = ({ children }) => {
     try {
       const api = (await import("../services/api")).default;
       const { data } = await api.getCurrentUser();
-      updateUser(data);
-      return data;
+      
+      // Ensure the avatar is preserved from current state if not returned by server
+      const updatedUser = {
+        ...user,
+        ...data,
+        avatar: data?.avatar || user?.avatar // Bank-grade persistence
+      };
+      
+      updateUser(updatedUser);
+      return updatedUser;
     } catch (error) {
       console.error("Failed to refresh user:", error);
       if (error.response?.status === 401) logout();
@@ -79,9 +96,17 @@ export const AuthProvider = ({ children }) => {
 
   const updateUser = (updatedData) => {
     const normalized = normalizeUser(updatedData);
-    const newUser = { ...user, ...normalized };
-    setUser(newUser);
-    localStorage.setItem("user", JSON.stringify(newUser));
+    
+    // Ensure we merge with existing user to never lose the avatar
+    setUser(prevUser => {
+        const newUser = { 
+            ...prevUser, 
+            ...normalized,
+            avatar: normalized.avatar || prevUser?.avatar // Critical persistence fix
+        };
+        localStorage.setItem("user", JSON.stringify(newUser));
+        return newUser;
+    });
   };
 
   return (

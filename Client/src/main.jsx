@@ -6,6 +6,7 @@ import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './context/AuthContext';
 import AuthRoute from './components/AuthRoute';
 import App from "./App"; 
+import Userhome from "./components/Userhome";
 import FlexoraAuth from "./pages/auth/Flexoraauth";
 import UserProfilePage from "./components/Userprofile";
 import About from "./components/About";
@@ -41,6 +42,11 @@ createRoot(document.getElementById("root")).render(
         />
         <Routes>
           <Route path="/" element={<App />} />
+          <Route path="/home" element={
+            <AuthRoute requiredRole="job_seeker">
+              <Userhome />
+            </AuthRoute>
+          } />
           <Route path="/about" element={<About />} />
           <Route path="/jobs" element={<Jobs />} />
           <Route path="/post-job" element={<PostJob />} />

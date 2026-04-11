@@ -4,10 +4,7 @@ import { useAuth } from './context/AuthContext';
 import { Navigate } from 'react-router-dom';
 
 function App() {
-  const { user } = useAuth();
-  if (!user) return <LandingPage />;
-  if (user.role === 'admin') return <Navigate to="/flexora-admin" replace />;
-  return <Userhome />;
+  return <LandingPage />;
 }
 
 export default App;

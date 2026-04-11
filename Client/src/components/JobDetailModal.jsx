@@ -18,6 +18,8 @@ import {
 import { BACKEND_URL } from '../services/api';
 import SlideButton from './SlideButton';
 
+import UserAvatar from './UserAvatar';
+
 const JobDetailModal = ({ 
   job, 
   isOpen, 
@@ -180,17 +182,11 @@ const JobDetailModal = ({
                            <CheckCircle size={14} className="text-blue-500" /> Verified Employer
                         </h3>
                         <div className="flex items-center gap-4 mb-8">
-                           <div className="w-12 h-12 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-white font-black text-xl overflow-hidden">
-                              {job.provider?.avatar ? (
-                                <img 
-                                  src={job.provider.avatar.startsWith('/uploads') ? `${BACKEND_URL}${job.provider.avatar}` : job.provider.avatar} 
-                                  alt="" 
-                                  className="w-full h-full object-cover" 
-                                />
-                              ) : (
-                                <span className="text-slate-700">{job.provider?.name?.[0] || 'P'}</span>
-                              )}
-                           </div>
+                           <UserAvatar 
+                             user={job.provider} 
+                             className="w-12 h-12 rounded-xl" 
+                             textClassName="text-xl" 
+                           />
                            <div>
                               <p className="text-sm font-black text-white uppercase truncate">{job.provider?.name || 'Authorized Member'}</p>
                               <p className="flex-meta lowercase opacity-60">Flexora Partner</p>

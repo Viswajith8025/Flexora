@@ -1,5 +1,6 @@
 import Job from "../models/job.js";
 import User from "../models/user.js";
+import AuditLog from "../models/AuditLog.js";
 
 export const getStats = async (req, res) => {
   try {
@@ -39,6 +40,21 @@ export const flagJob = async (req, res) => {
       { isFlagged: true },
       { new: true }
     );
+    if (!job) return res.status(404).json({ msg: "Job not found" });
+
+    // 🕵️ CREATE AUDIT LOG (Internal Transparency)
+    await AuditLog.create({
+      adminId: req.user.id,
+      action: 'FLAG_JOB',
+      resourceType: 'Job',
+      resourceId: job._id,
+      details: { reason: "Manual flag by admin", previousState: "unflagged" },
+      metadata: {
+        ip: req.ip,
+        userAgent: req.headers["user-agent"]
+      }
+    });
+
     res.json({ msg: "Job flagged successfully", job });
   } catch (err) {
     res.status(500).json({ msg: "Error flagging job", error: err.message });
@@ -64,6 +80,19 @@ export const approveJob = async (req, res) => {
       { new: true }
     );
     if (!job) return res.status(404).json({ msg: "Job not found" });
+
+    // 🕵️ CREATE AUDIT LOG (Internal Transparency)
+    await AuditLog.create({
+        adminId: req.user.id,
+        action: 'APPROVE_JOB',
+        resourceType: 'Job',
+        resourceId: job._id,
+        details: { action: "Job manually approved for feed" },
+        metadata: {
+          ip: req.ip,
+          userAgent: req.headers["user-agent"]
+        }
+    });
     
     res.json({ msg: "Job approved successfully", job });
   } catch (err) {

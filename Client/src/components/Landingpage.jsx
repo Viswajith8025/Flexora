@@ -133,6 +133,11 @@ const Flexora = () => {
                 dashboard
               </Link>
             )}
+            {currentUser?.role === 'job_seeker' && (
+              <Link to="/home" className="text-sm font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-colors">
+                dashboard
+              </Link>
+            )}
             {currentUser?.role === 'admin' && (
               <Link to="/flexora-admin" className="text-sm font-bold uppercase tracking-widest text-blue-500 hover:text-blue-400 transition-colors">
                 admin hub
@@ -186,6 +191,9 @@ const Flexora = () => {
               {currentUser?.role === 'job_provider' && (
                 <Link to="/my-jobs" className="block text-xs font-bold uppercase tracking-widest text-white" onClick={() => setIsMenuOpen(false)}>dashboard</Link>
               )}
+              {currentUser?.role === 'job_seeker' && (
+                <Link to="/home" className="block text-xs font-bold uppercase tracking-widest text-white" onClick={() => setIsMenuOpen(false)}>dashboard</Link>
+              )}
               {currentUser?.role === 'admin' && (
                 <Link to="/flexora-admin" className="block text-xs font-bold uppercase tracking-widest text-blue-400" onClick={() => setIsMenuOpen(false)}>admin hub</Link>
               )}
@@ -230,14 +238,18 @@ const Flexora = () => {
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
                 <SlideButton
-                  to={currentUser ? "/post-job" : "/flexoraauth"}
+                  to={currentUser ? (currentUser.role === 'job_provider' ? "/my-jobs" : (currentUser.role === 'admin' ? "/flexora-admin" : "/home")) : "/flexoraauth"}
                   state={!currentUser ? { mode: 'signup' } : undefined}
                   className="w-full sm:w-auto !py-4 !px-10 !text-base shadow-xl shadow-blue-600/25"
                 >
-                  Post a Job
+                  {currentUser ? "Go to Dashboard" : "Post a Job"}
                 </SlideButton>
-                <SlideButton to="/jobs" variant="secondary" className="w-full sm:w-auto !py-4 !px-10 !text-base">
-                  Browse Jobs
+                <SlideButton 
+                  to={currentUser ? (currentUser.role === 'job_provider' ? "/my-jobs" : (currentUser.role === 'admin' ? "/flexora-admin" : "/home")) : "/jobs"} 
+                  variant="secondary" 
+                  className="w-full sm:w-auto !py-4 !px-10 !text-base"
+                >
+                  {currentUser ? "Enter Hub" : "Browse Jobs"}
                 </SlideButton>
               </div>
             </motion.div>

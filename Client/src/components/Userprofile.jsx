@@ -47,6 +47,8 @@ const SKILLS_LIST = [
   "Plumber", "Anchor", "Marketing", "Sales"
 ];
 
+import UserAvatar from './UserAvatar';
+
 const UserProfilePage = () => {
   const { user: currentUser, logout, refreshUser, updateUser, isLoading: authLoading } = useAuth();
   const [isFetchingFresh, setIsFetchingFresh] = useState(true);
@@ -206,17 +208,11 @@ const UserProfilePage = () => {
           <div className="px-8 sm:px-14 flex flex-col md:flex-row md:items-end justify-between -mt-16 sm:-mt-24 pb-8 relative z-10">
             <div className="flex flex-col md:flex-row items-center md:items-end gap-8">
               <div className="relative group cursor-pointer" onClick={handleOpenEdit}>
-                 <div className="w-32 h-32 sm:w-44 sm:h-44 rounded-[32px] bg-slate-900 border-4 sm:border-8 border-slate-950 shadow-2xl overflow-hidden flex items-center justify-center">
-                    {currentUser.avatar ? (
-                      <img 
-                        src={currentUser.avatar.startsWith('/uploads') ? `${BACKEND_URL}${currentUser.avatar}` : currentUser.avatar} 
-                        alt={currentUser.name} 
-                        className="w-full h-full object-cover" 
-                      />
-                    ) : (
-                      <span className="text-5xl font-black text-slate-700 uppercase">{currentUser.name?.charAt(0)}</span>
-                    )}
-                 </div>
+                 <UserAvatar 
+                   user={currentUser} 
+                   className="w-32 h-32 sm:w-44 sm:h-44 rounded-[32px] border-4 sm:border-8 border-slate-950 shadow-2xl" 
+                   textClassName="text-6xl"
+                 />
                  <div className="absolute inset-0 bg-blue-600/20 opacity-0 group-hover:opacity-100 transition-opacity rounded-[32px] flex items-center justify-center backdrop-blur-[2px]">
                     <Camera className="text-white" size={32} />
                  </div>
@@ -393,10 +389,8 @@ const UserProfilePage = () => {
                               <div className="w-20 h-20 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-center overflow-hidden">
                                 {previewUrl ? (
                                   <img src={previewUrl} className="w-full h-full object-cover" />
-                                ) : currentUser.avatar ? (
-                                  <img src={currentUser.avatar.startsWith('/uploads') ? `${BACKEND_URL}${currentUser.avatar}` : currentUser.avatar} className="w-full h-full object-cover" />
                                 ) : (
-                                  <Camera className="text-slate-800" />
+                                  <UserAvatar user={currentUser} className="w-full h-full" textClassName="text-2xl" />
                                 )}
                               </div>
                               <div className="flex-1">

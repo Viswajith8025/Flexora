@@ -44,6 +44,10 @@ const MyJobs = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedJobForDetail, setSelectedJobForDetail] = useState(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [activePayingJob, setActivePayingJob] = useState(null);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [lastTransactionId, setLastTransactionId] = useState("");
 
   useEffect(() => {
     fetchMyJobs();
@@ -63,10 +67,17 @@ const MyJobs = () => {
   };
 
   const handlePayment = async (jobId) => {
+    if (isProcessingPayment) return; // Prevention of double submit (Bank-grade)
+
     try {
+      setIsProcessingPayment(true);
+      setActivePayingJob(jobId);
+
       const res = await loadRazorpayScript();
       if (!res) {
         toast.error("Razorpay SDK failed to load. Check your internet connection.");
+        setIsProcessingPayment(false);
+        setActivePayingJob(null);
         return;
       }
 
@@ -92,11 +103,21 @@ const MyJobs = () => {
             });
 
             if (verifyRes.data.success) {
-              toast.success("Payment Successful! Listing Promoted.");
-              fetchMyJobs(); // Refresh to show 'Paid' status
+              setLastTransactionId(response.razorpay_payment_id);
+              setShowSuccessModal(true);
+              fetchMyJobs(); 
             }
           } catch (err) {
-            toast.error("Payment verification failed. Contact support.");
+            toast.error("Security verification failed. If money was debited, it will reflect within 2 hours.");
+          } finally {
+            setIsProcessingPayment(false);
+            setActivePayingJob(null);
+          }
+        },
+        modal: {
+          ondismiss: function() {
+            setIsProcessingPayment(false);
+            setActivePayingJob(null);
           }
         },
         prefill: {
@@ -114,6 +135,8 @@ const MyJobs = () => {
     } catch (error) {
       console.error("Payment Error:", error);
       toast.error(error.response?.data?.msg || "Payment failed to initialize");
+      setIsProcessingPayment(false);
+      setActivePayingJob(null);
     }
   };
 
@@ -281,9 +304,22 @@ const MyJobs = () => {
                     ) : (
                       <button 
                         onClick={() => handlePayment(job._id)}
-                        className="flex-1 flex items-center justify-center gap-2 bg-amber-600 text-white py-3.5 px-6 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-amber-500 transition-all shadow-lg shadow-amber-600/10"
+                        disabled={isProcessingPayment}
+                        className={`flex-1 flex items-center justify-center gap-2 py-3.5 px-6 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg ${
+                          activePayingJob === job._id 
+                            ? 'bg-slate-800 text-slate-500 cursor-not-allowed' 
+                            : 'bg-amber-600 text-white hover:bg-amber-500 shadow-amber-600/10'
+                        }`}
                       >
-                        <Zap size={14} className="fill-white" /> Pay to Promote
+                        {activePayingJob === job._id ? (
+                          <>
+                            <Loader2 size={14} className="animate-spin" /> Initializing...
+                          </>
+                        ) : (
+                          <>
+                            <Zap size={14} className="fill-white" /> Pay to Promote
+                          </>
+                        )}
                       </button>
                     )}
                     
@@ -314,13 +350,48 @@ const MyJobs = () => {
         )}
       </main>
 
-      {/* Shared Detail Modal */}
-      <JobDetailModal
-         job={selectedJobForDetail}
-         isOpen={isDetailModalOpen}
-         onClose={() => setIsDetailModalOpen(false)}
-         isProviderView={true}
-      />
+      {isDetailModalOpen && selectedJobForDetail && (
+        <JobDetailModal
+          job={selectedJobForDetail}
+          onClose={() => setIsDetailModalOpen(false)}
+        />
+      )}
+
+      {/* 🏆 Bank-Grade Success Modal */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
+          <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="bg-emerald-500 p-8 flex justify-center">
+              <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center animate-bounce">
+                <CheckCircle size={40} className="text-white" />
+              </div>
+            </div>
+            
+            <div className="p-8 text-center">
+              <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight mb-2">Payment Successful!</h3>
+              <p className="text-slate-500 mb-6 font-medium">Your job listing has been professionally promoted to the top of the feed.</p>
+              
+              <div className="bg-slate-50 rounded-2xl p-4 mb-8 text-left border border-slate-100">
+                <div className="flex justify-between mb-2">
+                  <span className="text-slate-400 text-xs font-bold uppercase tracking-wider">Transaction ID</span>
+                  <span className="text-slate-900 text-xs font-mono font-bold">{lastTransactionId}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-400 text-xs font-bold uppercase tracking-wider">Status</span>
+                  <span className="text-emerald-600 text-xs font-black uppercase tracking-widest">Verified ✅</span>
+                </div>
+              </div>
+
+              <button 
+                onClick={() => setShowSuccessModal(false)}
+                className="w-full py-4 bg-slate-900 text-white rounded-xl font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl shadow-slate-900/20"
+              >
+                Go to Dashboard
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
