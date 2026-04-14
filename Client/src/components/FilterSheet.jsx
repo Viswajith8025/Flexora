@@ -13,6 +13,8 @@ const FilterSheet = ({
   setCategoryFilter, 
   jobTypeFilter, 
   setJobTypeFilter,
+  dateFilter,
+  setDateFilter,
   categories,
   resultCount,
   onClear
@@ -93,6 +95,20 @@ const FilterSheet = ({
                     value={locationFilter}
                     onChange={(e) => setLocationFilter(e.target.value)}
                     className="w-full bg-slate-950 border border-slate-800 rounded-2xl py-4 pl-14 pr-5 text-white text-xs font-medium focus:outline-none focus:border-blue-600 transition-all shadow-inner"
+                  />
+                </div>
+              </div>
+
+              {/* Date Filter Section */}
+              <div className="mb-10">
+                <label className="flex-meta uppercase mb-4 block text-slate-500 font-black">Job Date</label>
+                <div className="relative group">
+                  <Calendar className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-800 group-focus-within:text-blue-500 transition-colors" size={16} />
+                  <input
+                    type="date"
+                    value={dateFilter}
+                    onChange={(e) => setDateFilter(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-2xl py-4 pl-14 pr-5 text-white text-xs font-medium focus:outline-none focus:border-blue-600 transition-all shadow-inner [color-scheme:dark]"
                   />
                 </div>
               </div>

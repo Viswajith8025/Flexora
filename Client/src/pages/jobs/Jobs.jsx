@@ -22,7 +22,9 @@ import {
   AlertCircle,
   BookmarkCheck,
   Bell,
-  User
+  User,
+  Calendar,
+  Check
 } from "lucide-react";
 import logo from "../../assets/logooo.png";
 import JobCard from "../../components/Jobcard";
@@ -133,6 +135,7 @@ const Jobs = () => {
   const [locationFilter, setLocationFilter] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [jobTypeFilter, setJobTypeFilter] = useState("");
+  const [dateFilter, setDateFilter] = useState(""); // 📅 High-Fidelity Date Context
   const [selectedJob, setSelectedJob] = useState(null);
   const [loadingApplyId, setLoadingApplyId] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
@@ -182,24 +185,29 @@ const Jobs = () => {
     }
   }, [currentUser]);
 
-  const fetchJobs = async () => {
+  const fetchJobs = useCallback(async () => {
     try {
       setIsLoading(true);
-      const { data } = await api.getJobs();
+      // 🔥 Server-Side High-Fidelity Filtering
+      const { data } = await api.getJobs({ 
+        search: searchQuery,
+        location: locationFilter,
+        category: categoryFilter,
+        date: dateFilter
+      });
       
-      if (data && data.length > 0) {
-        setJobs(data);
-      } else {
-        setJobs([]);
-      }
+      setJobs(data || []);
     } catch (error) {
       console.error("Fetch error:", error);
-      toast.error('Connection issue. Refreshing list...');
       setJobs([]);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [searchQuery, locationFilter, categoryFilter, dateFilter]);
+
+  useEffect(() => {
+    fetchJobs();
+  }, [fetchJobs]);
 
   const handleApply = useCallback(async (job) => {
     if (!currentUser) {
@@ -289,7 +297,7 @@ const Jobs = () => {
       <nav className="fixed top-0 w-full z-[100] px-6 h-20 flex justify-between items-center bg-slate-950/80 border-b border-slate-900 backdrop-blur-md">
         <div className="max-w-7xl mx-auto w-full flex justify-between items-center">
           <Link to="/" className="flex items-center gap-2">
-            <img src={logo} alt="Flexora" className="h-18 w-auto" />
+            <img src={logo} alt="Flexora" className="h-24 w-auto drop-shadow-2xl" />
           </Link>
 
           <div className="hidden md:flex items-center gap-8">
@@ -370,15 +378,23 @@ const Jobs = () => {
                   />
                 </div>
                 <div>
-                  <label className="flex-label text-white mb-4 flex items-center gap-2">
-                     <MapPin size={14} className="text-blue-500" /> Location
-                  </label>
-                  <input
+                   <input
                     type="text"
                     placeholder="City or district..."
                     value={locationFilter}
                     onChange={(e) => setLocationFilter(e.target.value)}
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl px-5 py-3.5 flex-label text-white placeholder-slate-700 focus:outline-none focus:border-blue-600 transition-all shadow-inner"
+                  />
+                </div>
+                <div>
+                  <label className="flex-label text-white mb-4 flex items-center gap-2">
+                     <Calendar size={14} className="text-blue-500" /> Start Date
+                  </label>
+                  <input
+                    type="date"
+                    value={dateFilter}
+                    onChange={(e) => setDateFilter(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-5 py-3.5 flex-label text-white focus:outline-none focus:border-blue-600 transition-all shadow-inner [color-scheme:dark]"
                   />
                 </div>
               </div>
@@ -531,6 +547,8 @@ const Jobs = () => {
         setCategoryFilter={setCategoryFilter}
         jobTypeFilter={jobTypeFilter}
         setJobTypeFilter={setJobTypeFilter}
+        dateFilter={dateFilter}
+        setDateFilter={setDateFilter}
         categories={categories}
         resultCount={filteredJobs.length}
         onClear={() => {
@@ -538,6 +556,7 @@ const Jobs = () => {
           setLocationFilter("");
           setCategoryFilter("all");
           setJobTypeFilter("");
+          setDateFilter("");
           setSavedOnly(false);
           toast("Filters Cleared", { icon: "🧹" });
         }}

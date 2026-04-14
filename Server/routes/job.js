@@ -1,11 +1,17 @@
 // backend/routes/job.js
 import express from "express";
-import { createJob, getJobs, reportJob, applyToJob, getMyApplications, toggleSaveJob, getSavedJobs, getProviderJobs, updateApplicationStatus, getJobApplicants } from "../controllers/jobcontroller.js";
+import { 
+  createJob, getJobs, reportJob, applyToJob, 
+  getMyApplications, toggleSaveJob, getSavedJobs, 
+  getProviderJobs, updateApplicationStatus, 
+  getJobApplicants, getRecommendations 
+} from "../controllers/jobcontroller.js";
 import { authenticate, isProvider } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
  
 router.post("/", authenticate, isProvider, createJob);
+router.get("/recommendations", authenticate, getRecommendations);
 router.get("/my-applications", authenticate, getMyApplications);
 router.get("/saved", authenticate, getSavedJobs);
 router.post("/save/:id", authenticate, toggleSaveJob);

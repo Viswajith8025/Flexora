@@ -14,6 +14,8 @@ const userSchema = new mongoose.Schema({
   phone: { type: String, default: "Not provided" },
   age: { type: Number, default: 0 },
   district: { type: String, default: "Not specified" },
+  freePostingsUsed: { type: Number, default: 0 },
+  totalPaidPostings: { type: Number, default: 0 },
   skills: { type: [String], default: [] },
   savedJobs: [{ type: mongoose.Schema.Types.ObjectId, ref: "Job" }]
 });

@@ -2,15 +2,15 @@ import React, { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../../services/api";
-import { 
-  Briefcase, 
-  Calendar, 
-  Users, 
-  ChevronRight, 
-  Plus, 
-  Search, 
-  LayoutGrid, 
-  List, 
+import {
+  Briefcase,
+  Calendar,
+  Users,
+  ChevronRight,
+  Plus,
+  Search,
+  LayoutGrid,
+  List,
   Loader2,
   AlertCircle,
   Eye,
@@ -86,12 +86,11 @@ const MyJobs = () => {
 
       // 2. Open Razorpay Modal
       const options = {
-        key: order.key_id, 
+        key: order.key_id,
         amount: order.amount,
         currency: order.currency,
         name: "Flexora Premium",
         description: "Job Promotion Fee",
-        image: logo,
         order_id: order.id,
         handler: async function (response) {
           // 3. Verify Payment on Backend
@@ -105,7 +104,7 @@ const MyJobs = () => {
             if (verifyRes.data.success) {
               setLastTransactionId(response.razorpay_payment_id);
               setShowSuccessModal(true);
-              fetchMyJobs(); 
+              fetchMyJobs();
             }
           } catch (err) {
             toast.error("Security verification failed. If money was debited, it will reflect within 2 hours.");
@@ -115,7 +114,7 @@ const MyJobs = () => {
           }
         },
         modal: {
-          ondismiss: function() {
+          ondismiss: function () {
             setIsProcessingPayment(false);
             setActivePayingJob(null);
           }
@@ -140,7 +139,7 @@ const MyJobs = () => {
     }
   };
 
-  const filteredJobs = jobs.filter(job => 
+  const filteredJobs = jobs.filter(job =>
     job.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     job.location?.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -166,7 +165,7 @@ const MyJobs = () => {
       <nav className="fixed top-0 w-full z-[100] px-6 h-20 flex justify-between items-center bg-slate-950/80 border-b border-slate-900 backdrop-blur-md">
         <div className="max-w-7xl mx-auto w-full flex justify-between items-center">
           <Link to="/" className="flex items-center gap-2">
-            <img src={logo} alt="Flexora" className="h-18 w-auto" />
+            <img src={logo} alt="Flexora" className="h-24 w-auto drop-shadow-2xl" />
           </Link>
 
           <div className="hidden md:flex items-center gap-8">
@@ -196,18 +195,18 @@ const MyJobs = () => {
           </div>
 
           <div className="flex items-center gap-4 bg-slate-900/50 p-1.5 rounded-2xl border border-slate-800 backdrop-blur-sm">
-             <button 
-               onClick={() => setViewMode("grid")}
-               className={`p-2.5 rounded-xl transition-all ${viewMode === 'grid' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-slate-500 hover:text-white'}`}
-             >
-               <LayoutGrid size={18} />
-             </button>
-             <button 
-               onClick={() => setViewMode("list")}
-               className={`p-2.5 rounded-xl transition-all ${viewMode === 'list' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-slate-500 hover:text-white'}`}
-             >
-               <List size={18} />
-             </button>
+            <button
+              onClick={() => setViewMode("grid")}
+              className={`p-2.5 rounded-xl transition-all ${viewMode === 'grid' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-slate-500 hover:text-white'}`}
+            >
+              <LayoutGrid size={18} />
+            </button>
+            <button
+              onClick={() => setViewMode("list")}
+              className={`p-2.5 rounded-xl transition-all ${viewMode === 'list' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-slate-500 hover:text-white'}`}
+            >
+              <List size={18} />
+            </button>
           </div>
         </div>
 
@@ -218,7 +217,7 @@ const MyJobs = () => {
             { label: "Active Roles", val: stats.active, icon: Eye, color: "text-green-500" },
             { label: "Total Applicants", val: stats.applicants, icon: Users, color: "text-purple-500" }
           ].map((stat, i) => (
-            <motion.div 
+            <motion.div
               key={i}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -242,8 +241,8 @@ const MyJobs = () => {
         {/* Search */}
         <div className="max-w-md mb-8 relative group">
           <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-800 group-focus-within:text-blue-500 transition-colors" size={16} />
-          <input 
-            type="text" 
+          <input
+            type="text"
             placeholder="Search your listings..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -254,9 +253,9 @@ const MyJobs = () => {
         {/* Listings Display */}
         {filteredJobs.length === 0 ? (
           <div className="flex-card border-dashed p-20 text-center">
-             <AlertCircle size={36} className="text-slate-800 mx-auto mb-4" />
-             <p className="flex-label text-slate-500 italic mb-8">No matching listings found.</p>
-             <Link to="/post-job" className="text-blue-500 flex-label uppercase hover:text-blue-400">Post your first job</Link>
+            <AlertCircle size={36} className="text-slate-800 mx-auto mb-4" />
+            <p className="flex-label text-slate-500 italic mb-8">No matching listings found.</p>
+            <Link to="/post-job" className="text-blue-500 flex-label uppercase hover:text-blue-400">Post your first job</Link>
           </div>
         ) : (
           <div className={viewMode === "grid" ? "grid grid-cols-1 md:grid-cols-2 gap-6" : "space-y-4"}>
@@ -272,16 +271,15 @@ const MyJobs = () => {
                 >
                   <div className={viewMode === 'list' ? 'flex items-center gap-6 overflow-hidden' : ''}>
                     {/* Status Badge */}
-                    <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest mb-6 ${
-                      job.status === 'open' ? 'bg-green-500/10 text-green-500 border border-green-500/20' : 'bg-slate-800 text-slate-500 border border-slate-700'
-                    }`}>
+                    <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest mb-6 ${job.status === 'open' ? 'bg-green-500/10 text-green-500 border border-green-500/20' : 'bg-slate-800 text-slate-500 border border-slate-700'
+                      }`}>
                       <div className={`w-1.5 h-1.5 rounded-full ${job.status === 'open' ? 'bg-green-500' : 'bg-slate-500'}`} />
                       {job.status}
                     </div>
 
                     <h3 className={`flex-title-sm truncate ${viewMode === 'list' ? 'mb-0' : 'mb-2'}`}>{job.title}</h3>
                     <p className="flex-meta uppercase mb-6">{job.category}</p>
-                    
+
                     <div className={`flex flex-wrap items-center gap-6 ${viewMode === 'list' ? 'hidden sm:flex' : 'mb-10'}`}>
                       <div className="flex items-center gap-2 text-slate-500">
                         <Calendar size={14} />
@@ -302,14 +300,13 @@ const MyJobs = () => {
                         <CheckCircle size={14} /> Premium Listing
                       </div>
                     ) : (
-                      <button 
+                      <button
                         onClick={() => handlePayment(job._id)}
                         disabled={isProcessingPayment}
-                        className={`flex-1 flex items-center justify-center gap-2 py-3.5 px-6 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg ${
-                          activePayingJob === job._id 
-                            ? 'bg-slate-800 text-slate-500 cursor-not-allowed' 
+                        className={`flex-1 flex items-center justify-center gap-2 py-3.5 px-6 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg ${activePayingJob === job._id
+                            ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
                             : 'bg-amber-600 text-white hover:bg-amber-500 shadow-amber-600/10'
-                        }`}
+                          }`}
                       >
                         {activePayingJob === job._id ? (
                           <>
@@ -322,18 +319,18 @@ const MyJobs = () => {
                         )}
                       </button>
                     )}
-                    
-                    <button 
-                       onClick={() => {
-                          setSelectedJobForDetail(job);
-                          setIsDetailModalOpen(true);
-                       }}
-                       className="p-3.5 bg-slate-900 border border-slate-800 text-slate-500 rounded-xl hover:text-white hover:border-slate-700 transition-all flex items-center justify-center"
-                       title="View Listing Details"
+
+                    <button
+                      onClick={() => {
+                        setSelectedJobForDetail(job);
+                        setIsDetailModalOpen(true);
+                      }}
+                      className="p-3.5 bg-slate-900 border border-slate-800 text-slate-500 rounded-xl hover:text-white hover:border-slate-700 transition-all flex items-center justify-center"
+                      title="View Listing Details"
                     >
                       <Eye size={16} />
                     </button>
-                    <button 
+                    <button
                       onClick={() => navigate(`/jobs/${job._id}/applicants`)}
                       className="flex-1 flex items-center justify-center gap-2 bg-blue-600 text-white py-3.5 px-6 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-500 transition-all shadow-lg shadow-blue-600/10"
                     >
@@ -366,11 +363,11 @@ const MyJobs = () => {
                 <CheckCircle size={40} className="text-white" />
               </div>
             </div>
-            
+
             <div className="p-8 text-center">
               <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight mb-2">Payment Successful!</h3>
               <p className="text-slate-500 mb-6 font-medium">Your job listing has been professionally promoted to the top of the feed.</p>
-              
+
               <div className="bg-slate-50 rounded-2xl p-4 mb-8 text-left border border-slate-100">
                 <div className="flex justify-between mb-2">
                   <span className="text-slate-400 text-xs font-bold uppercase tracking-wider">Transaction ID</span>
@@ -382,7 +379,7 @@ const MyJobs = () => {
                 </div>
               </div>
 
-              <button 
+              <button
                 onClick={() => setShowSuccessModal(false)}
                 className="w-full py-4 bg-slate-900 text-white rounded-xl font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl shadow-slate-900/20"
               >

@@ -49,9 +49,26 @@ export default {
   updateProfile: (data) => api.patch('auth/update-profile', data),
 
   // Jobs
-  getJobs: (params) => api.get('jobs', { params }),
+  getJobs: (params) => api.get('/jobs', { 
+    params: {
+      ...params,
+      region: params?.region || params?.location,
+      date: params?.date // Seeker can now filter by high-fidelity date
+    } 
+  }),
+  getRecommendations: () => api.get('/jobs/recommendations'),
   getPublicStats: () => api.get('jobs/stats'),
   createJob: (data) => api.post('jobs', data),
+  
+  // 💰 Monetization & Payments
+  createListingOrder: () => api.post('/payment/create-listing-order'),
+  verifyListingPayment: (data) => api.post("/payment/verify", data),
+
+  // 📩 Inquiry Management
+  submitInquiry: (data) => api.post("/contact/submit", data),
+  getInquiries: () => api.get("/contact/all"),
+  resolveInquiry: (id) => api.patch(`/contact/resolve/${id}`),
+
   applyToJob: (id) => api.post(`jobs/apply/${id}`),
   applyForJob: (id) => api.post(`jobs/apply/${id}`), 
   getMyApplications: () => api.get('applications/my'),

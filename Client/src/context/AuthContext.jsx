@@ -60,6 +60,8 @@ export const AuthProvider = ({ children }) => {
 
     setToken(newToken);
     setUser(normalizedUser);
+    
+    // Switch to localStorage for industrial-standard session security
     localStorage.setItem("token", newToken);
     localStorage.setItem("user", JSON.stringify(normalizedUser));
     
@@ -104,7 +106,7 @@ export const AuthProvider = ({ children }) => {
             ...normalized,
             avatar: normalized.avatar || prevUser?.avatar // Critical persistence fix
         };
-        localStorage.setItem("user", JSON.stringify(newUser));
+        sessionStorage.setItem("user", JSON.stringify(newUser));
         return newUser;
     });
   };

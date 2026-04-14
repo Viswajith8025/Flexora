@@ -16,7 +16,7 @@ import {
   Zap
 } from 'lucide-react';
 import logo from '../assets/logooo.png';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import SlideButton from './SlideButton';
 import NotificationDropdown from './NotificationDropdown';
@@ -26,6 +26,7 @@ import api from '../services/api';
 const Flexora = () => {
   const { user: currentUser, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const navigate = useNavigate();
 
   const [stats, setStats] = useState({
     totalJobs: 0,
@@ -33,6 +34,14 @@ const Flexora = () => {
     partnerCompanies: 0,
     satisfactionRate: "98.2%"
   });
+
+  // Industrial-Standard Admin Restriction
+  // If an admin lands here, they are professionally rerouted to their hub
+  useEffect(() => {
+    if (currentUser?.role === 'admin') {
+      navigate('/flexora-admin');
+    }
+  }, [currentUser, navigate]);
 
   useEffect(() => {
     const fetchPublicStats = async () => {
@@ -104,66 +113,66 @@ const Flexora = () => {
     logout();
   };
 
+  // If role is admin, return null or a loading state while redirecting
+  if (currentUser?.role === 'admin') {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+        <div className="w-10 h-10 border-2 border-slate-800 border-t-blue-500 rounded-full animate-spin" />
+        <p className="sr-only">Rerouting Admin Hub...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-200">
       {/* Navigation */}
-      <header className="fixed top-0 w-full z-50 bg-slate-950/80 border-b border-slate-900 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center">
-          <Link to="/" className="flex items-center gap-3">
-            <img src={logo} alt="Flexora" className="h-16 w-auto" />
+      <header className="fixed top-0 w-full z-50 bg-slate-950/60 border-b border-slate-900/50 backdrop-blur-xl transition-all duration-300">
+        <div className="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center text-flex-sans">
+          <Link to="/" className="flex items-center gap-3 group">
+            <img src={logo} alt="Flexora" className="h-14 w-auto drop-shadow-[0_0_15px_rgba(59,130,246,0.2)] group-hover:scale-105 transition-transform" />
           </Link>
 
-          <nav className="hidden md:flex items-center gap-8">
-            <Link to="/" className="text-sm font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-colors">
-              home
-            </Link>
-            <button onClick={() => scrollToSection('how-it-works')} className="text-sm font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-colors">
-              how it works
-            </button>
-            <Link to="/about" className="text-sm font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-colors">
-              about
-            </Link>
-            {(!currentUser || currentUser.role === 'job_seeker') && (
-              <Link to="/jobs" className="text-sm font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-colors">
-                jobs
-              </Link>
-            )}
-            {currentUser?.role === 'job_provider' && (
-              <Link to="/my-jobs" className="text-sm font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-colors">
+          <nav className="hidden md:flex items-center gap-10">
+            {['home', 'how-it-works', 'about'].map((item) => (
+              <button 
+                key={item}
+                onClick={() => item === 'home' ? window.scrollTo({ top: 0, behavior: 'smooth' }) : scrollToSection(item.replace(' ', '-'))} 
+                className="text-[10px] font-bold uppercase tracking-[0.25em] text-slate-400 hover:text-white transition-all relative group"
+              >
+                {item.replace('-', ' ')}
+                <span className="absolute -bottom-1.5 left-0 w-0 h-[1px] bg-blue-500 transition-all group-hover:w-full" />
+              </button>
+            ))}
+            
+            {(currentUser?.role === 'job_provider' || currentUser?.role === 'job_seeker') && (
+              <Link to={currentUser.role === 'job_provider' ? "/my-jobs" : "/home"} className="text-[10px] font-bold uppercase tracking-[0.25em] text-slate-400 hover:text-white transition-all relative group">
                 dashboard
+                <span className="absolute -bottom-1.5 left-0 w-0 h-[1px] bg-blue-500 transition-all group-hover:w-full" />
               </Link>
             )}
-            {currentUser?.role === 'job_seeker' && (
-              <Link to="/home" className="text-sm font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-colors">
-                dashboard
-              </Link>
-            )}
-            {currentUser?.role === 'admin' && (
-              <Link to="/flexora-admin" className="text-sm font-bold uppercase tracking-widest text-blue-500 hover:text-blue-400 transition-colors">
-                admin hub
-              </Link>
-            )}
+            {/* Admin Hub link removed from here as they are rerouted automatically */}
 
             {currentUser ? (
-              <div className="flex items-center gap-6 pl-4 border-l border-slate-900">
+              <div className="flex items-center gap-6 pl-8 border-l border-slate-900">
                 <NotificationDropdown />
-                <Link to="/userprofile" className="flex items-center gap-2 group">
-                  <div className="w-8 h-8 rounded-xl bg-blue-600/10 border border-blue-600/20 flex items-center justify-center text-blue-500 group-hover:bg-blue-600 group-hover:text-white transition-all">
-                    <User size={14} />
-                  </div>
-                  <span className="text-sm font-bold uppercase tracking-widest text-slate-400 group-hover:text-white transition-colors">{currentUser.name?.split(' ')[0]}</span>
+                <Link to="/userprofile" className="flex items-center gap-3 group">
+                   <div className="w-8 h-8 rounded-xl bg-blue-600/10 border border-blue-600/20 flex items-center justify-center text-blue-500 group-hover:bg-blue-600 group-hover:text-white transition-all overflow-hidden shadow-inner">
+                      <User size={14} />
+                   </div>
+                   <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 group-hover:text-white transition-colors">{currentUser.name?.split(' ')[0]}</span>
                 </Link>
-                <button onClick={handleLogout} className="text-sm font-bold uppercase tracking-widest text-slate-700 hover:text-red-500 transition-colors">Logout</button>
+                <div className="h-4 w-px bg-slate-800" />
+                <button onClick={handleLogout} className="text-[9px] font-bold uppercase tracking-widest text-slate-600 hover:text-red-500 transition-colors">Logout</button>
               </div>
             ) : (
-              <>
-                <Link to="/flexoraauth" state={{ mode: 'login' }} className="text-sm font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-colors">
-                  log in
+              <div className="flex items-center gap-8">
+                <Link to="/flexoraauth" className="text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-colors">
+                  Login
                 </Link>
-                <SlideButton to="/flexoraauth" state={{ mode: 'signup' }} className="px-6 py-2 !text-[10px] uppercase">
-                  signup
+                <SlideButton to="/flexoraauth" state={{ mode: 'signup' }} className="!py-2.5 !px-8 !text-[9px]">
+                  Join Hub
                 </SlideButton>
-              </>
+              </div>
             )}
           </nav>
 
@@ -193,9 +202,6 @@ const Flexora = () => {
               )}
               {currentUser?.role === 'job_seeker' && (
                 <Link to="/home" className="block text-xs font-bold uppercase tracking-widest text-white" onClick={() => setIsMenuOpen(false)}>dashboard</Link>
-              )}
-              {currentUser?.role === 'admin' && (
-                <Link to="/flexora-admin" className="block text-xs font-bold uppercase tracking-widest text-blue-400" onClick={() => setIsMenuOpen(false)}>admin hub</Link>
               )}
               <div className="pt-4 border-t border-slate-800 flex flex-col gap-3">
                 <Link to="/flexoraauth" state={{ mode: 'login' }} onClick={() => setIsMenuOpen(false)} className="text-center py-3 text-xs font-bold uppercase tracking-widest text-slate-400">log in</Link>
@@ -244,9 +250,9 @@ const Flexora = () => {
                 >
                   {currentUser ? "Go to Dashboard" : "Post a Job"}
                 </SlideButton>
-                <SlideButton 
-                  to={currentUser ? (currentUser.role === 'job_provider' ? "/my-jobs" : (currentUser.role === 'admin' ? "/flexora-admin" : "/home")) : "/jobs"} 
-                  variant="secondary" 
+                <SlideButton
+                  to={currentUser ? (currentUser.role === 'job_provider' ? "/my-jobs" : (currentUser.role === 'admin' ? "/flexora-admin" : "/home")) : "/jobs"}
+                  variant="secondary"
                   className="w-full sm:w-auto !py-4 !px-10 !text-base"
                 >
                   {currentUser ? "Enter Hub" : "Browse Jobs"}
@@ -449,7 +455,7 @@ const Flexora = () => {
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex flex-col sm:flex-row justify-between gap-10">
             <div className="max-w-xs">
-              <img src={logo} alt="Flexora" className="h-9 mb-4" />
+              <img src={logo} alt="Flexora" className="h-14 mb-6" />
               <p className="text-slate-600 text-sm leading-relaxed">
                 Short-term work, done right. For job seekers and employers across Kerala.
               </p>

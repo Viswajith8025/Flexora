@@ -1,22 +1,70 @@
 import Job from "../models/job.js";
-import User from "../models/user.js"; 
+import User from "../models/user.js";
 import { createNotification } from "./notificationController.js";
+import mongoose from "mongoose";
+
+/**
+ * 📍 Intelligent Job Recommendations
+ * Matches jobs based on the seeker's registered district.
+ */
+export const getRecommendations = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+
+    if (!user || !user.district || user.district === "Not specified") {
+      return res.json([]); // No district, no recommendations
+    }
+
+    // High-fidelity matching: Strictly localized, approved, and open jobs
+    const recommendedJobs = await Job.find({
+      location: { $regex: user.district.trim(), $options: 'i' },
+      isApproved: true,
+      status: "open"
+    })
+      .populate("provider", "name avatar")
+      .sort({ createdAt: -1 })
+      .limit(10);
+
+    res.json(recommendedJobs);
+  } catch (err) {
+    console.error("Recommendation Error:", err);
+    res.status(500).json({ msg: "Failed to fetch recommendations" });
+  }
+};
 
 export const createJob = async (req, res) => {
   try {
-    const { 
-      jobTitle, title, 
-      description, 
-      location, 
-      startDate, date,
-      payRate, compensation, payType,
-      jobType, category,
-      requirements, estimatedHours,
-      contactEmail, contactPhone,
-      endDate 
+    const {
+      jobTitle, title, description, location,
+      startDate, date, payRate, compensation, payType,
+      jobType, category, requirements, estimatedHours,
+      contactEmail, contactPhone, endDate,
+      paymentId // Razorpay Payment ID if required
     } = req.body;
 
-    // Sanitization: Convert empty strings/whitespace to undefined to avoid Mongoose casting errors (Date/Number)
+    const User = (await import("../models/user.js")).default;
+    const user = await User.findById(req.user.id);
+
+    if (!user) return res.status(404).json({ msg: "User context not found" });
+
+    // 💰 Monetization Logic: First 2 free, then 99 INR
+    let isFreeListing = false;
+    if (user.role === 'job_provider') {
+      if (user.freePostingsUsed < 2) {
+        isFreeListing = true;
+      } else if (!paymentId) {
+        return res.status(402).json({
+          msg: "Listing Limit Exceeded",
+          error: "You have used your 2 free listings. Please pay 99 INR to post this job.",
+          requiresPayment: true,
+          fee: 99
+        });
+      }
+    } else if (user.role === 'admin') {
+      isFreeListing = true; // Admins post free
+    }
+
+    // Sanitization helper
     const sanitize = (val) => (typeof val === "string" && val.trim() === "" ? undefined : val);
 
     const newJob = new Job({
@@ -34,10 +82,21 @@ export const createJob = async (req, res) => {
       contactEmail,
       contactPhone,
       provider: req.user.id,
-      isApproved: false // Requires Admin Verification
+      isApproved: false, // Requires Admin Verification
+      paymentStatus: isFreeListing ? "paid" : "pending",
+      razorpayOrderId: !isFreeListing ? paymentId : undefined
     });
 
     await newJob.save();
+
+    // 📈 Increment User Counters
+    if (isFreeListing && user.role === 'job_provider') {
+      user.freePostingsUsed += 1;
+    } else if (!isFreeListing) {
+      user.totalPaidPostings += 1;
+    }
+    await user.save();
+
     res.status(201).json({ msg: "Job posted successfully", job: newJob });
   } catch (err) {
     console.error("CRITICAL Create Job Error:", {
@@ -45,34 +104,47 @@ export const createJob = async (req, res) => {
       stack: err.stack,
       errors: err.errors // Captures Mongoose validation details
     });
-    
-    const errorDetail = err.name === 'ValidationError' 
+
+    const errorDetail = err.name === 'ValidationError'
       ? Object.values(err.errors).map(e => e.message).join(", ")
       : err.message;
 
-    res.status(500).json({ 
-      msg: "Error posting job", 
-      error: errorDetail 
+    res.status(500).json({
+      msg: "Error posting job",
+      error: errorDetail
     });
   }
 };
 
 export const getJobs = async (req, res) => {
   try {
-    const { category, search, location, limit } = req.query;
-    
+    const { category, search, location, limit, date, region } = req.query;
+
     // Base query: Only show approved jobs
     let query = { isApproved: true };
 
-    // Apply filters if provided
+    // 🏷️ Category Filter
     if (category && category !== 'all') {
       query.category = category;
     }
-    
-    if (location && typeof location === 'string' && location.trim() !== "") {
-      query.location = { $regex: String(location).trim(), $options: 'i' };
+
+    // 📍 Region/Location High-Fidelity Matching
+    const districtFilter = region || location;
+    if (districtFilter && typeof districtFilter === 'string' && districtFilter.trim() !== "") {
+      query.location = { $regex: String(districtFilter).trim(), $options: 'i' };
     }
-    
+
+    // 📅 Date-Wise Query
+    if (date) {
+      const searchDate = new Date(date);
+      if (!isNaN(searchDate.getTime())) {
+        const start = new Date(searchDate.setHours(0, 0, 0, 0));
+        const end = new Date(searchDate.setHours(23, 59, 59, 999));
+        query.date = { $gte: start, $lte: end };
+      }
+    }
+
+    // 🔍 Search Optimization (Title/Description)
     if (search && typeof search === 'string' && search.trim() !== "") {
       const searchTerms = String(search).trim();
       query.$or = [
@@ -95,15 +167,15 @@ export const getJobs = async (req, res) => {
     }
 
     const jobs = await findQuery;
-    
+
     // Filter out jobs where provider failed to populate (e.g. deleted user)
     const sanitizedJobs = jobs.filter(job => job.provider !== null);
-    
+
     res.json(sanitizedJobs);
   } catch (err) {
     console.error("CRITICAL Marketplace Error:", err);
-    res.status(500).json({ 
-      msg: "Internal Marketplace Error", 
+    res.status(500).json({
+      msg: "Internal Marketplace Error",
       error: err.message,
       name: err.name,
       stack: err.stack
@@ -114,7 +186,7 @@ export const getJobs = async (req, res) => {
 export const applyToJob = async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     // Guard: reject non-ObjectId strings (e.g. fallback IDs like "fb1")
     if (!id.match(/^[0-9a-fA-F]{24}$/)) {
       return res.status(400).json({ msg: "This is a demo listing. Sign up as a provider to post real jobs!" });
@@ -153,23 +225,23 @@ export const getMyApplications = async (req, res) => {
     // Find all jobs where the user is in the applicants array
     const jobs = await Job.find({ "applicants.user": req.user.id })
       .populate("provider", "name email");
-    
-      // Map to return only relevant application details + job info
-      const applications = jobs.map(job => {
-        const myApp = job.applicants.find(a => a.user.toString() === req.user.id);
-        if (!myApp) return null;
-        
-        return {
-          jobId: job._id,
-          title: job.title,
-          company: job.provider?.name || "Premium Provider",
-          status: myApp.status,
-          appliedAt: myApp.appliedAt,
-          location: job.location,
-          compensation: job.compensation,
-          category: job.category
-        };
-      }).filter(Boolean);
+
+    // Map to return only relevant application details + job info
+    const applications = jobs.map(job => {
+      const myApp = job.applicants.find(a => a.user.toString() === req.user.id);
+      if (!myApp) return null;
+
+      return {
+        jobId: job._id,
+        title: job.title,
+        company: job.provider?.name || "Premium Provider",
+        status: myApp.status,
+        appliedAt: myApp.appliedAt,
+        location: job.location,
+        compensation: job.compensation,
+        category: job.category
+      };
+    }).filter(Boolean);
 
     res.json(applications);
   } catch (err) {
@@ -243,13 +315,13 @@ export const updateApplicationStatus = async (req, res) => {
   try {
     const { jobId, userId } = req.params;
     const { status } = req.body; // status: 'accepted' or 'rejected'
-    
+
     const job = await Job.findById(jobId);
     if (!job) return res.status(404).json({ msg: "Job not found" });
 
     // Check if the requester is the owner
     if (job.provider.toString() !== req.user.id) {
-       return res.status(403).json({ msg: "Unauthorized to manage this job" });
+      return res.status(403).json({ msg: "Unauthorized to manage this job" });
     }
 
     const applicant = job.applicants.find(a => a.user.toString() === userId);
@@ -278,12 +350,12 @@ export const getJobApplicants = async (req, res) => {
   try {
     const job = await Job.findById(req.params.id)
       .populate("applicants.user", "name email phone avatar rating completedJobs district skills");
-    
+
     if (!job) return res.status(404).json({ msg: "Job not found" });
 
     // Security: Only provider can see applicants
     if (job.provider.toString() !== req.user.id) {
-       return res.status(403).json({ msg: "Unauthorized" });
+      return res.status(403).json({ msg: "Unauthorized" });
     }
 
     res.json(job.applicants);

@@ -18,8 +18,12 @@ import MyApplications from "./pages/jobs/MyApplications";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import ApprovalQueue from "./pages/admin/ApprovalQueue";
 import JobManagement from "./pages/admin/JobManagement";
+import InquiryManagement from "./pages/admin/InquiryManagement";
 import ModerationCenter from "./pages/admin/ModerationCenter";
 import UserManagement from "./pages/admin/UserManagement";
+import Terms from "./pages/Terms";
+import Privacy from "./pages/Privacy";
+import Contact from "./pages/Contact";
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
@@ -49,8 +53,15 @@ createRoot(document.getElementById("root")).render(
           } />
           <Route path="/about" element={<About />} />
           <Route path="/jobs" element={<Jobs />} />
-          <Route path="/post-job" element={<PostJob />} />
+          <Route path="/post-job" element={
+            <AuthRoute requiredRole="job_provider">
+              <PostJob />
+            </AuthRoute>
+          } />
           <Route path="/flexoraauth" element={<FlexoraAuth />} />
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/privacy" element={<Privacy />} />
+          <Route path="/contact" element={<Contact />} />
           
           {/* Protected routes */}
           <Route path="/userprofile" element={
@@ -81,6 +92,7 @@ createRoot(document.getElementById("root")).render(
             </AuthRoute>
           }>
             <Route path="jobs" element={<JobManagement />} />
+            <Route path="inquiries" element={<InquiryManagement />} />
             <Route path="approvals" element={<ApprovalQueue />} />
             <Route path="moderation" element={<ModerationCenter />} />
             <Route path="users" element={<UserManagement />} />

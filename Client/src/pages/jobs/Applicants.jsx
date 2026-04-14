@@ -80,7 +80,7 @@ const Applicants = () => {
       <nav className="fixed top-0 w-full z-[100] px-6 h-20 flex justify-between items-center bg-slate-950/80 border-b border-slate-900 backdrop-blur-md">
         <div className="max-w-7xl mx-auto w-full flex justify-between items-center">
           <Link to="/" className="flex items-center gap-2">
-            <img src={logo} alt="Flexora" className="h-18 w-auto" />
+            <img src={logo} alt="Flexora" className="h-24 w-auto drop-shadow-2xl" />
           </Link>
 
           <div className="hidden md:flex items-center gap-8">

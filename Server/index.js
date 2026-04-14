@@ -11,6 +11,7 @@ import { Server } from "socket.io";
 import chatRoutes from "./routes/chats.js";
 import applicationRoutes from "./routes/application.js";
 import paymentRoutes from "./routes/payment.js";
+import contactRoutes from "./routes/contact.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
 import adminRoutes from "./routes/admin.js";
 import helmet from "helmet";
@@ -88,6 +89,7 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads"), {
 app.use("/api/auth", authRoutes);
 app.use("/api/jobs", jobRoutes);
 app.use("/api/chat", chatRoutes);
+app.use("/api/contact", contactRoutes);
 app.use("/api/applications", applicationRoutes);
 app.use("/api/payment", paymentLimiter, paymentRoutes); // Applying stricter limit on payments
 app.use("/api/notifications", notificationRoutes);

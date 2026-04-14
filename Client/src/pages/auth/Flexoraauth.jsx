@@ -112,7 +112,7 @@ const FlexoraAuth = () => {
         {/* Content */}
         <div className="relative z-10 w-full p-20 flex flex-col justify-between items-start">
           <Link to="/" className="hover:opacity-80 transition-opacity">
-            <img src={logo} alt="Flexora" className="h-14 w-auto drop-shadow-2xl" />
+            <img src={logo} alt="Flexora" className="h-20 w-auto drop-shadow-2xl" />
           </Link>
 
           <div>
@@ -168,7 +168,7 @@ const FlexoraAuth = () => {
       <div className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-12 relative">
         <div className="absolute top-10 left-10 lg:hidden">
           <Link to="/">
-            <img src={logo} alt="Flexora" className="h-10 w-auto" />
+            <img src={logo} alt="Flexora" className="h-14 w-auto drop-shadow-2xl" />
           </Link>
         </div>
 

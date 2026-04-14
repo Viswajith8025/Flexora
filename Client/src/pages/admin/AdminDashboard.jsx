@@ -16,7 +16,8 @@ import {
   Clock,
   UserCheck,
   Building2,
-  Zap
+  Zap,
+  Mail
 } from "lucide-react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import logo from "../../assets/logooo.png";
@@ -25,6 +26,7 @@ const AdminDashboard = () => {
   const { user, logout } = useAuth();
   const [stats, setStats] = useState(null);
   const [pendingCount, setPendingCount] = useState(0);
+  const [inquiryCount, setInquiryCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const location = useLocation();
   const navigate = useNavigate();
@@ -35,12 +37,17 @@ const AdminDashboard = () => {
 
   const fetchAllData = async () => {
     try {
-      const [statsRes, pendingRes] = await Promise.allSettled([
+      const [statsRes, pendingRes, inquiryRes] = await Promise.allSettled([
         api.getAdminStats(),
         api.getPendingJobs(),
+        api.getInquiries(),
       ]);
       if (statsRes.status === 'fulfilled') setStats(statsRes.value.data);
       if (pendingRes.status === 'fulfilled') setPendingCount(pendingRes.value.data?.length || 0);
+      if (inquiryRes.status === 'fulfilled') {
+        const pendingInquiries = inquiryRes.value.data?.filter(i => i.status === 'pending') || [];
+        setInquiryCount(pendingInquiries.length);
+      }
     } catch (err) {
       console.error("Admin data fetch error:", err);
     } finally {
@@ -58,6 +65,7 @@ const AdminDashboard = () => {
     { label: "Members", icon: <Users size={16} />, path: "/flexora-admin/users", badge: null },
     { label: "Jobs Registry", icon: <Briefcase size={16} />, path: "/flexora-admin/jobs", badge: stats?.totalJobs || null },
     { label: "Approval Queue", icon: <CheckCircle size={16} />, path: "/flexora-admin/approvals", badge: pendingCount > 0 ? pendingCount : null },
+    { label: "Inquiries", icon: <Mail size={16} />, path: "/flexora-admin/inquiries", badge: inquiryCount > 0 ? inquiryCount : null },
     { label: "Moderation", icon: <AlertTriangle size={16} />, path: "/flexora-admin/moderation", badge: stats?.reportedJobs > 0 ? stats.reportedJobs : null },
   ];
 
@@ -79,7 +87,7 @@ const AdminDashboard = () => {
         {/* Logo */}
         <div className="p-6 border-b border-slate-900/60">
           <Link to="/flexora-admin">
-            <img src={logo} alt="Flexora" className="h-16 w-auto" />
+            <img src={logo} alt="Flexora" className="h-24 w-auto drop-shadow-2xl brightness-125" />
           </Link>
           <div className="mt-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-500/10 border border-blue-500/20">
             <Shield size={9} className="text-blue-400" />
@@ -197,6 +205,7 @@ const AdminDashboard = () => {
                   { label: "Total Members", value: (stats?.totalUsers ?? 0) - 1, icon: <Users size={16} />, sub: "Seekers & Providers", color: "text-blue-400", glow: "bg-blue-600/5" },
                   { label: "Platform Jobs", value: stats?.totalJobs || 0, icon: <Briefcase size={16} />, sub: "All listings", color: "text-emerald-400", glow: "bg-emerald-600/5" },
                   { label: "Pending Review", value: pendingCount, icon: <Clock size={16} />, sub: "Awaiting approval", color: "text-amber-400", glow: "bg-amber-600/5" },
+                  { label: "Support Inquiries", value: inquiryCount, icon: <Mail size={16} />, sub: "Need response", color: "text-blue-400", glow: "bg-blue-600/5" },
                   { label: "Flagged Content", value: stats?.reportedJobs || 0, icon: <AlertTriangle size={16} />, sub: "Need moderation", color: "text-red-400", glow: "bg-red-600/5" },
                 ].map((s, i) => (
                   <motion.div

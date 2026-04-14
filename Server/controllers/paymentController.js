@@ -1,58 +1,104 @@
 import paymentService from "../services/paymentService.js";
 import Transaction from "../models/Transaction.js";
 import Job from "../models/job.js";
+import User from "../models/user.js";
 
 export const createOrder = async (req, res) => {
-    try {
-        const { jobId } = req.body;
-        
-        // Security check for input
-        if (!jobId) {
-            return res.status(400).json({ msg: "Please provide a Job ID" });
+  try {
+    const { jobId } = req.body;
+    
+    // Security check for input
+    if (!jobId) {
+      return res.status(400).json({ msg: "Please provide a Job ID" });
+    }
+
+    const job = await Job.findById(jobId);
+    if (!job) {
+      return res.status(404).json({ msg: "Job not found" });
+    }
+
+    // Only provider of the job can pay for it
+    if (job.provider.toString() !== req.user.id) {
+      return res.status(403).json({ msg: "Unauthorized" });
+    }
+
+    // Check if environment keys are ready
+    if (!process.env.RAZORPAY_KEY_ID) {
+      return res.status(501).json({ msg: "Payment system not configured" });
+    }
+
+    // Standard Fee Calculation (Bank-grade: calculate on server, NEVER from frontend)
+    const feeInInr = parseInt(process.env.RAZORPAY_PROMOTION_FEE) || 499;
+    const amount = feeInInr * 100; // Convert to paise
+
+    const order = await paymentService.createOrder({
+      amount: amount, 
+      currency: "INR",
+      receipt: `rp_${jobId.toString().slice(-6)}_${Date.now()}`,
+    });
+
+    // 📊 Create Audit Trail (Bank-grade)
+    await Transaction.create({
+      userId: req.user.id,
+      jobId: jobId,
+      amount: amount,
+      razorpayOrderId: order.id,
+      status: "pending",
+      metadata: {
+        ip: req.ip,
+        userAgent: req.headers["user-agent"]
+      }
+    });
+
+    // Update Job with latest order Attempt
+    job.razorpayOrderId = order.id;
+    job.paymentStatus = "pending";
+    await job.save();
+
+    res.json({
+      id: order.id,
+      amount: order.amount,
+      currency: order.currency,
+      key_id: process.env.RAZORPAY_KEY_ID
+    });
+  } catch (error) {
+    // High-fidelity logging for fintech debugging
+    console.error("💥 PAYMENT ORDER CRASH:", {
+      message: error.message,
+      stack: error.stack,
+      jobId: req.body?.jobId,
+      userId: req.user?.id
+    });
+    
+    res.status(500).json({ 
+      msg: "Payment initialization failed", 
+      error: error.message,
+      debug: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
+  }
+};
+
+/**
+ * 💰 Specialized 99 INR Listing Order
+ * Orchestrates bank-grade order creation for providers who exceeded free limits.
+ */
+export const createListingOrder = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+
+        if (!user || user.role !== "job_provider") {
+            return res.status(403).json({ msg: "Only Providers can purchase listings" });
         }
 
-        const job = await Job.findById(jobId);
-        if (!job) {
-            return res.status(404).json({ msg: "Job not found" });
-        }
-
-        // Only provider of the job can pay for it
-        if (job.provider.toString() !== req.user.id) {
-            return res.status(403).json({ msg: "Unauthorized" });
-        }
-
-        // Check if environment keys are ready
-        if (!process.env.RAZORPAY_KEY_ID) {
-            return res.status(501).json({ msg: "Payment system not configured" });
-        }
-
-        // Standard Fee Calculation (Bank-grade: calculate on server, NEVER from frontend)
-        const feeInInr = parseInt(process.env.RAZORPAY_PROMOTION_FEE) || 499;
-        const amount = feeInInr * 100; // Convert to paise
+        // Industrial-Standard Fee: 99 INR
+        const feeInInr = 99;
+        const amount = feeInInr * 100; // Paise
 
         const order = await paymentService.createOrder({
-            amount: amount, 
-            currency: "INR",
-            receipt: `rp_${jobId.toString().slice(-6)}_${Date.now()}`,
-        });
-
-        // 📊 Create Audit Trail (Bank-grade)
-        await Transaction.create({
-            userId: req.user.id,
-            jobId: jobId,
             amount: amount,
-            razorpayOrderId: order.id,
-            status: "pending",
-            metadata: {
-                ip: req.ip,
-                userAgent: req.headers["user-agent"]
-            }
+            currency: "INR",
+            receipt: `listing_${user._id.toString().slice(-6)}_${Date.now()}`,
         });
-
-        // Update Job with latest order Attempt
-        job.razorpayOrderId = order.id;
-        job.paymentStatus = "pending";
-        await job.save();
 
         res.json({
             id: order.id,
@@ -61,19 +107,8 @@ export const createOrder = async (req, res) => {
             key_id: process.env.RAZORPAY_KEY_ID
         });
     } catch (error) {
-        // High-fidelity logging for fintech debugging
-        console.error("💥 PAYMENT ORDER CRASH:", {
-            message: error.message,
-            stack: error.stack,
-            jobId: req.body?.jobId,
-            userId: req.user?.id
-        });
-        
-        res.status(500).json({ 
-            msg: "Payment initialization failed", 
-            error: error.message,
-            debug: process.env.NODE_ENV === 'development' ? error.stack : undefined
-        });
+        console.error("💥 LISTING ORDER ERROR:", error);
+        res.status(500).json({ msg: "Initialization failed", error: error.message });
     }
 };
 

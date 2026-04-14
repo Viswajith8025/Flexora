@@ -5,20 +5,20 @@ import { Link } from 'react-router-dom';
 
 const MotionLink = motion.create(Link);
 
-const SlideButton = ({ 
-  children, 
-  onClick, 
+const SlideButton = ({
+  children,
+  onClick,
   to,
-  variant = 'primary', 
+  variant = 'primary',
   icon: Icon = ArrowRight,
   className = '',
   type = 'button',
   disabled = false
 }) => {
   const isPrimary = variant === 'primary';
-  
-  const baseClasses = isPrimary 
-    ? 'flex-button-primary' 
+
+  const baseClasses = isPrimary
+    ? 'flex-button-primary'
     : 'flex-button-secondary';
 
   const containerVariants = {
@@ -49,7 +49,7 @@ const SlideButton = ({
   if (to) {
     return (
       <MotionLink to={to} {...commonProps}>
-        <motion.span 
+        <motion.span
           variants={textVariants}
           transition={{ duration: 0.25, ease: "easeOut" }}
           className="relative z-10 flex items-center justify-center gap-2"
@@ -81,7 +81,7 @@ const SlideButton = ({
       disabled={disabled}
       {...commonProps}
     >
-      <motion.span 
+      <motion.span
         variants={textVariants}
         transition={{ duration: 0.25, ease: "easeOut" }}
         className="relative z-10 flex items-center justify-center gap-2"

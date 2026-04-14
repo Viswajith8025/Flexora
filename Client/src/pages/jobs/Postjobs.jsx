@@ -18,7 +18,9 @@ import {
   Shield,
   LayoutDashboard,
   Bell,
-  Sparkles
+  Sparkles,
+  CreditCard,
+  AlertTriangle
 } from "lucide-react";
 import logo from "../../assets/logooo.png";
 import { motion, AnimatePresence } from "framer-motion";
@@ -177,12 +179,49 @@ const JobPreview = ({ formData }) => {
   );
 };
 
+// ─── Payment Required Modal ──────────────────────────────────────────────────
+const PaymentRequiredModal = ({ isOpen, onClose, onPay }) => (
+  <div className="fixed inset-0 z-[400] flex items-center justify-center p-6">
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="absolute inset-0 bg-slate-950/95 backdrop-blur-sm"
+      onClick={onClose}
+    />
+    <motion.div
+      initial={{ opacity: 0, scale: 0.96, y: 10 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.96, y: 10 }}
+      className="relative w-full max-w-md bg-slate-900 border border-slate-800 rounded-[40px] p-12 text-center shadow-2xl"
+    >
+      <div className="w-20 h-20 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mx-auto mb-10">
+        <CreditCard size={32} className="text-amber-500" />
+      </div>
+      <h2 className="flex-title-sm mb-4 uppercase">Listing Limit Reached</h2>
+      <p className="flex-label text-slate-500 mb-10 italic">
+        You've expertly used your 2 free listings. To maintain our premium marketplace quality, a small fee of <b>99 INR</b> is required for additional posts.
+      </p>
+      
+      <div className="flex flex-col gap-3">
+        <SlideButton onClick={onPay} className="w-full !py-5 justify-center">
+          Pay 99 INR & Post
+        </SlideButton>
+        <button onClick={onClose} className="flex-button-secondary py-4">
+          Cancel Listing
+        </button>
+      </div>
+    </motion.div>
+  </div>
+);
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 const PostJob = () => {
   const [step, setStep] = useState(1);
   const { user: currentUser, logout } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
@@ -212,15 +251,66 @@ const PostJob = () => {
   const canProceedStep1 = formData.jobTitle.trim().length >= 3 && formData.jobType;
   const canProceedStep2 = formData.location.trim() && formData.payRate;
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (paymentId = null) => {
     if (!currentUser) { navigate("/flexoraauth"); return; }
     setIsSubmitting(true);
     try {
-      await api.createJob(formData);
+      const payload = { ...formData };
+      if (paymentId) payload.paymentId = paymentId;
+
+      await api.createJob(payload);
       setStep(4);
+      setShowPaymentModal(false);
+      toast.success("Job Published Successfully");
     } catch (err) {
-      const msg = err.response?.data?.msg || "Provision error. Try again.";
-      toast.error(msg);
+      if (err.response?.status === 402) {
+         setShowPaymentModal(true);
+      } else {
+         const msg = err.response?.data?.msg || "Provision error. Try again.";
+         toast.error(msg);
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handlePayment = async () => {
+    try {
+      setIsSubmitting(true);
+      const { data: order } = await api.createListingOrder();
+      
+      const options = {
+        key: order.key_id,
+        amount: order.amount,
+        currency: order.currency,
+        name: "Flexora Marketplace",
+        description: "Standard Job Listing Fee",
+        order_id: order.id,
+        handler: async (response) => {
+          try {
+            await api.verifyListingPayment({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+            });
+            // Successful payment, proceed to post the job
+            handleSubmit(response.razorpay_payment_id);
+          } catch (err) {
+            toast.error("Payment verification failed. Contact support.");
+          }
+        },
+        prefill: {
+          name: currentUser.name,
+          email: currentUser.email,
+          contact: currentUser.phone
+        },
+        theme: { color: "#2563eb" },
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+    } catch (err) {
+      toast.error("Could not initialize checkout. Try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -275,7 +365,7 @@ const PostJob = () => {
       <nav className="fixed top-0 w-full z-[100] px-6 h-20 flex justify-between items-center bg-slate-950/80 border-b border-slate-900 backdrop-blur-md">
         <div className="flex items-center gap-8">
           <Link to="/" className="flex items-center gap-3">
-            <img src={logo} alt="Flexora" className="h-16 w-auto" />
+            <img src={logo} alt="Flexora" className="h-24 w-auto drop-shadow-2xl" />
           </Link>
           <div className="hidden md:flex items-center gap-6">
             <Link to="/" className="text-slate-500 font-bold text-[10px] uppercase tracking-widest hover:text-white transition-colors">Home</Link>
@@ -727,6 +817,17 @@ const PostJob = () => {
         </div>
       </main>
       
+      {/* Payment Modal */}
+      <AnimatePresence>
+        {showPaymentModal && (
+          <PaymentRequiredModal 
+            isOpen={showPaymentModal} 
+            onClose={() => setShowPaymentModal(false)}
+            onPay={handlePayment}
+          />
+        )}
+      </AnimatePresence>
+
       {/* Background Decorative Element */}
       <div className="fixed bottom-0 right-0 w-[500px] h-[500px] bg-blue-600/5 blur-[120px] rounded-full -z-10 pointer-events-none" />
     </div>
