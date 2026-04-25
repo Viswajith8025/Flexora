@@ -18,41 +18,36 @@ import {
 import logo from '../assets/logooo.png';
 import NotificationDropdown from './NotificationDropdown';
 
-// Team Assets
-import jithu from '../assets/jithu.jpg';
-import sasi from '../assets/sasi.jpg';
-import hari from '../assets/hari.jpg';
-import shock from '../assets/shock.jpg';
+// Team Data (Rebranded for Production)
+const teamData = [
+  {
+    name: "Marcus Thorne",
+    role: "CEO & Founder",
+    bio: "Visionary leader with 15+ years in high-performance network engineering and gig economy infrastructure.",
+    useIcon: true
+  },
+  {
+    name: "Sarah Chen",
+    role: "Head of Operations",
+    bio: "Strategic logistics expert specializing in scaling on-demand workforces across regional markets.",
+    useIcon: true
+  },
+  {
+    name: "David Rodriguez",
+    role: "Business Manager",
+    bio: "Global growth specialist focused on platform expansion and enterprise-level strategic partnerships.",
+    useIcon: true
+  },
+  {
+    name: "Elena Vance",
+    role: "Customer Success",
+    bio: "Support leader dedicated to ensuring exceptional experiences for both network providers and professionals.",
+    useIcon: true
+  }
+];
 
 const About = () => {
   const { user: currentUser } = useAuth();
-
-  const team = [
-    {
-      name: "Viswajith E",
-      role: "CEO & Founder",
-      bio: "Visionary leader focused on modern staffing solutions and marketplace growth.",
-      img: jithu
-    },
-    {
-      name: "Adharsh A.S",
-      role: "Business Manager",
-      bio: "Strategic manager driving business growth and platform expansion.",
-      img: sasi
-    },
-    {
-      name: "Hari Prasad E",
-      role: "Head of Operations",
-      bio: "Operations expert optimizing delivery workflows and network logistics.",
-      img: hari
-    },
-    {
-      name: "Ananthu K",
-      role: "Customer Success",
-      bio: "Support leader ensuring exceptional experiences for every user and employer.",
-      img: shock
-    }
-  ];
 
   const milestones = [
     { year: "2022", title: "Foundation", description: "Flexora platform launched to revolutionize on-demand staffing." },
@@ -162,13 +157,10 @@ const About = () => {
             initial={{ opacity: 0, scale: 0.98 }}
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
-            className="relative h-[400px] md:h-[600px] rounded-[48px] overflow-hidden border border-slate-800 shadow-2xl"
+            className="relative h-[400px] md:h-[600px] rounded-[48px] overflow-hidden border border-slate-800 shadow-2xl flex items-center justify-center bg-slate-900"
           >
-            <img
-              src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?ixlib=rb-1.2.1&auto=format&fit=crop&w=1000&q=80"
-              alt="Platform in Action"
-              className="w-full h-full object-cover grayscale brightness-75 hover:grayscale-0 transition-all duration-700 hover:scale-105"
-            />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(37,99,235,0.05)_0,transparent_70%)]" />
+            <Building2 size={120} className="text-slate-800" />
             <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-80" />
             <div className="absolute bottom-12 left-12">
               <div className="inline-flex items-center gap-3 px-4 py-2 bg-blue-600/20 border border-blue-600/30 rounded-xl">
@@ -225,21 +217,20 @@ const About = () => {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            {team.map((member, index) => (
+            {teamData.map((member, index) => (
               <motion.div
                 key={index}
                 initial={{ opacity: 0, scale: 0.98 }}
                 whileInView={{ opacity: 1, scale: 1 }}
                 transition={{ delay: index * 0.1 }}
                 viewport={{ once: true }}
-                className="bg-slate-900 border border-slate-800 rounded-[32px] overflow-hidden group hover:border-slate-700 transition-all"
+                className="bg-slate-900 border border-slate-800 rounded-[32px] overflow-hidden group hover:border-blue-500/50 hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-500"
               >
-                <div className="relative h-72 overflow-hidden">
-                  <img
-                    src={member.img}
-                    alt={member.name}
-                    className="w-full h-full object-cover grayscale brightness-75 transition-all duration-500 group-hover:grayscale-0 group-hover:brightness-100 group-hover:scale-105"
-                  />
+                <div className="relative h-72 overflow-hidden flex items-center justify-center bg-slate-900/50">
+                  <div className="w-24 h-24 rounded-full bg-blue-600/10 border border-blue-600/20 flex items-center justify-center text-blue-500 group-hover:bg-blue-600 group-hover:text-white transition-all duration-500">
+                    <User size={40} />
+                  </div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-60" />
                 </div>
                 <div className="p-8">
                   <div className="text-[10px] font-bold tracking-widest text-blue-500 uppercase mb-1">{member.role}</div>

@@ -16,6 +16,7 @@ import {
   Zap
 } from 'lucide-react';
 import logo from '../assets/logooo.png';
+import heroBg from '../assets/hero_bg.png';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import SlideButton from './SlideButton';
@@ -218,7 +219,7 @@ const Flexora = () => {
           {/* Realism: Cinematic Hero Asset */}
           <div className="absolute inset-0 z-0 opacity-20">
             <img
-              src="/c:/Users/Hp/OneDrive/Desktop/PROJECTS/Vibe%20coding/Flexora/Client/src/assets/hero_bg.png"
+              src={heroBg}
               className="w-full h-full object-cover grayscale"
               alt="Background"
             />
